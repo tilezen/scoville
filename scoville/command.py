@@ -3,18 +3,21 @@ import logging
 import logging.config
 import time
 import pycurl
-from scoville import RedshiftExporter, MapzenProvider, RandomTile
+import yaml
+import os.path
+import traceback
+from scoville import RedshiftExporter, MapzenProvider, RandomTile, run_provider
 
 
 def scoville_main(argv=None):
     if argv is None:
         argv = sys.argv[1:]
 
-    if len(argv) < 2:
+    if len(argv) < 1:
         print>>sys.stderr, "Usage: scoville config.yaml"
         sys.exit(1)
 
-    config_file = argv[1]
+    config_file = argv[0]
     with open(config_file) as fh:
         config = yaml.load(fh)
 

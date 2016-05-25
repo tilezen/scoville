@@ -6,11 +6,11 @@ from contextlib2 import contextmanager
 import mapbox_vector_tile as mvt
 import shapely.geometry
 import psycopg2
-import yaml
 import datetime
 import uuid
 import random
 import traceback
+import sys
 
 
 @contextmanager
@@ -230,7 +230,13 @@ class PropertyStats(object):
 
         for k, v in props.items():
             self.num_props += 1
-            self.prop_bytes += len(k) + len(v)
+
+            assert isinstance(k, (str, unicode))
+            self.prop_bytes += len(k)
+            if isinstance(v, (str, unicode)):
+                self.prop_bytes += len(v)
+            else:
+                self.prop_bytes += len(str(v))
 
             if k in self.uniq_props:
                 self.uniq_props[k].add(v)
@@ -245,10 +251,14 @@ class PropertyStats(object):
 
         uniq_num_props = 0
         uniq_prop_bytes = 0
-        for k, s in self.uniq_props:
+        for k, s in self.uniq_props.items():
             for v in s:
                 uniq_num_props += 1
-                uniq_prop_bytes += len(k) + len(v)
+                uniq_prop_bytes += len(k)
+                if isinstance(v, (str, unicode)):
+                    uniq_prop_bytes += len(v)
+                else:
+                    uniq_prop_bytes += len(str(v))
 
         stats[layer_prefix + 'uniq_num_props'] = uniq_num_props
         stats[layer_prefix + 'uniq_prop_bytes'] = uniq_prop_bytes
