@@ -7,7 +7,6 @@ import mapbox_vector_tile as mvt
 import shapely.geometry
 import psycopg2
 import yaml
-import time
 import datetime
 import uuid
 import random
@@ -509,55 +508,3 @@ class RandomTile(object):
 
         raise ValueError, "Could not find index %d with sum %d" % \
             (idx, self.sum)
-
-
-if __name__ == '__main__':
-    import sys
-    import logging
-    import logging.config
-
-    if len(sys.argv) < 2:
-        print>>sys.stderr, "Usage: python scoville/__init__.py config.yaml"
-        sys.exit(1)
-
-    config_file = sys.argv[1]
-    with open(config_file) as fh:
-        config = yaml.load(fh)
-
-    logging_config = config.get('logging_config')
-    if logging_config:
-        logging.config.fileConfig(logging_config)
-
-    logger = logging.getLogger('scoville')
-
-    rs = RedshiftExporter(config['database'])
-    mz = MapzenProvider(config['mapzen']['host'], config['mapzen']['api_key'])
-    rand = RandomTile(config['tiles'])
-
-    next_run = time.time()
-    run_interval = int(config['run_interval'])
-    tiles = config['tiles']
-
-    while True:
-        try:
-            tile = rand.get_tile()
-            stats = run_provider(mz, tile)
-            stats['region'] = config['region']
-            rs.upload(stats)
-
-            logger.info("Fetched tile %r" % (tile,))
-
-        except (StandardError, pycurl.error) as e:
-            logger.warning("While fetching tile %r, got exception but carrying "
-                           "on regardless: %s" %
-                           (tile, "".join(traceback.format_exception(
-                               *sys.exc_info()))))
-
-        # python sleep can be interrupted and won't resume, so to try and make
-        # sure that we sleep the full interval, we loop on it.
-        next_run += run_interval
-        while True:
-            now = time.time()
-            if now >= next_run:
-                break
-            time.sleep(next_run - now)
