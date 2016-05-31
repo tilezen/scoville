@@ -2,7 +2,7 @@ import pycurl
 import gzip
 import os
 from cStringIO import StringIO
-from contextlib2 import contextmanager
+from contextlib2 import contextmanager, closing
 import mapbox_vector_tile as mvt
 import shapely.geometry
 import psycopg2
@@ -11,6 +11,9 @@ import uuid
 import random
 import traceback
 import sys
+import boto3
+import logging
+from io import BytesIO
 
 
 @contextmanager
@@ -469,29 +472,41 @@ VALUES (
         self.conn.commit()
 
 
+@contextmanager
+def open_uri(tiles_file):
+    if tiles_file.startswith('http://') or \
+       tiles_file.startswith('https://'):
+
+        buf = StringIO()
+        c = pycurl.Curl()
+        c.setopt(c.URL, tiles_file)
+        c.setopt(c.WRITEDATA, buf)
+        c.setopt(c.ENCODING, 'gzip')
+        c.perform()
+
+        status = c.getinfo(c.RESPONSE_CODE)
+        if status != 200:
+            raise RuntimeError, "Failed to get %r: HTTP status %r" % \
+                (tiles_file, status)
+
+        yield buf
+
+    elif tiles_file.startswith('s3://'):
+        bucket_name, key = tiles_file[5:].split('/', 1)
+
+        s3 = boto3.resource('s3')
+        obj = s3.Object(bucket_name=bucket_name, key=key)
+
+        yield BytesIO(obj.get()['Body'].read())
+
+    else:
+        yield closing(open(tiles_file, 'r'))
+
+
 class RandomTile(object):
     def __init__(self, tiles_file):
-        if tiles_file.startswith('http'):
-            buf = StringIO()
-            c = pycurl.Curl()
-            c.setopt(c.URL, tiles_file)
-            c.setopt(c.WRITEDATA, buf)
-            c.setopt(c.ENCODING, 'gzip')
-            c.perform()
-
-            status = c.getinfo(c.RESPONSE_CODE)
-            if status != 200:
-                raise RuntimeError, "Failed to get %r: HTTP status %r" % \
-                    (tiles_file, status)
-
-            data, sum = RandomTile.parse_config(buf)
-
-        else:
-            with open(tiles_file, 'r') as fh:
-                data, sum = RandomTile.parse_config(fh)
-
-        self.sum = sum
-        self.data = data
+        with open_uri(tiles_file) as io:
+            self.data, self.sum = RandomTile.parse_config(io)
 
     @staticmethod
     def parse_config(io):

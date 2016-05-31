@@ -4,3 +4,4 @@ contextlib2
 git+https://github.com/mapzen/mapbox-vector-tile@master#egg=mapbox-vector-tile
 psycopg2
 pyyaml
+boto3
