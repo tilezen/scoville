@@ -33,7 +33,8 @@ setup(name='scoville',
           'Shapely',
           'pycurl',
           'mapbox_vector_tile',
-          'psycopg2'
+          'psycopg2',
+          'boto3'
       ],
       entry_points=dict(
           console_scripts=[
