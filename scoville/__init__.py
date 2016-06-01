@@ -376,7 +376,7 @@ class RedshiftExporter(object):
         except:
             self.conn = None
             exc_class, exc, tb = sys.exc_info()
-            new_exc = ValueError("While uploading stats to redshift, resetting connection.")
+            new_exc = ValueError("%s: %s\nWhile uploading stats to redshift, resetting connection." % (str(exc_class), str(exc)))
             raise new_exc.__class__, new_exc, tb
 
     def upload_(self, stats):
@@ -433,7 +433,8 @@ VALUES (
                 cur.execute("""
 INSERT INTO scoville_layer_info (
   measurement_id, name, bytes, num_points, num_lines, num_polygons,
-  num_empty, line_coords, polygon_coords, line_length_cpx, polygon_area_cpx)
+  num_empty, line_coords, polygon_coords, line_length_cpx, polygon_area_cpx,
+  features, num_props, prop_bytes, uniq_num_props, uniq_prop_bytes)
 VALUES
   (%(measurement_id)s, %(name)s, %(bytes)s, %(num_points)s, %(num_lines)s,
    %(num_polygons)s, %(num_empty)s, %(line_coords)s, %(polygon_coords)s,
