@@ -268,11 +268,12 @@ class PropertyStats(object):
 
 
 class KindHistogram(object):
-    def __init__(self):
+    def __init__(self, property_name):
+        self.property_name = property_name
         self.counts = {}
 
     def update(self, shape, props):
-        kind = props.get('kind')
+        kind = props.get(self.property_name)
         if kind:
             self.counts[kind] = self.counts.get(kind, 0) + 1
 
@@ -298,7 +299,7 @@ class MapzenProvider(object):
         return url
 
     def stats_counters(self):
-        return [FeatureStats(), PropertyStats(), KindHistogram()]
+        return [FeatureStats(), PropertyStats(), KindHistogram('kind')]
 
     def source(self):
         return 'mapzen'
@@ -316,7 +317,7 @@ class MapboxProvider(object):
         return url
 
     def stats_counters(self):
-        return [FeatureStats(), PropertyStats()]
+        return [FeatureStats(), PropertyStats(), KindHistogram('type')]
 
     def source(self):
         return 'mapbox'
