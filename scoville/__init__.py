@@ -304,6 +304,24 @@ class MapzenProvider(object):
         return 'mapzen'
 
 
+class MapboxProvider(object):
+    def __init__(self, style, api_key):
+        self.style = style
+        self.api_key = api_key
+
+    def tile_url(self, coords):
+        z, x, y = coords
+        url = 'http://a.tiles.mapbox.com/v4/%s/%d/%d/%d.mvt?access_token=%s' \
+              % (self.style, z, x, y, self.api_key)
+        return url
+
+    def stats_counters(self):
+        return [FeatureStats(), PropertyStats()]
+
+    def source(self):
+        return 'mapbox'
+
+
 def run_provider(provider, coords):
     stats = dict(
         coord_z=coords[0],
@@ -457,17 +475,19 @@ VALUES
                                  uniq_num_props=layer['uniq_num_props'],
                                  uniq_prop_bytes=layer['uniq_prop_bytes']))
 
-                for kind, num in layer['kinds'].items():
-                    cur.execute("""
+                kinds = layer.get('kinds')
+                if kinds:
+                    for kind, num in kinds.items():
+                        cur.execute("""
 INSERT INTO scoville_layer_kind_info (
   measurement_id, name, kind, "count")
 VALUES (
   %(measurement_id)s, %(name)s, %(kind)s, %(count)s)""",
-                                dict(
-                                    measurement_id=measurement_id,
-                                    name=name,
-                                    kind=kind,
-                                    count=num))
+                                    dict(
+                                        measurement_id=measurement_id,
+                                        name=name,
+                                        kind=kind,
+                                        count=num))
 
         cur.close()
         self.conn.commit()

@@ -6,7 +6,8 @@ import pycurl
 import yaml
 import os.path
 import traceback
-from scoville import RedshiftExporter, MapzenProvider, RandomTile, run_provider
+from scoville import RedshiftExporter, MapzenProvider, MapboxProvider, \
+    RandomTile, run_provider
 
 
 def scoville_main(argv=None):
@@ -29,7 +30,18 @@ def scoville_main(argv=None):
     logger = logging.getLogger('scoville')
 
     rs = RedshiftExporter(config['database'])
-    mz = MapzenProvider(config['mapzen']['host'], config['mapzen']['api_key'])
+    providers = []
+
+    mz_conf = config.get('mapzen')
+    if mz_conf:
+        mz = MapzenProvider(mz_conf['host'], mz_conf['api_key'])
+        providers.append(mz)
+
+    mb_conf = config.get('mapbox')
+    if mb_conf:
+        mb = MapboxProvider(mb_conf['style'], mb_conf['api_key'])
+        providers.append(mb)
+
     rand = RandomTile(config['tiles'])
 
     next_run = time.time()
@@ -39,9 +51,10 @@ def scoville_main(argv=None):
     while True:
         try:
             tile = rand.get_tile()
-            stats = run_provider(mz, tile)
-            stats['region'] = config['region']
-            rs.upload(stats)
+            for p in providers:
+                stats = run_provider(p, tile)
+                stats['region'] = config['region']
+                rs.upload(stats)
 
             logger.info("Fetched tile %r" % (tile,))
 
