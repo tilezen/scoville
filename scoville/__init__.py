@@ -317,7 +317,7 @@ class MapboxProvider(object):
         return url
 
     def stats_counters(self):
-        return [FeatureStats(), PropertyStats(), KindHistogram('type')]
+        return [FeatureStats(), PropertyStats(), KindHistogram('class')]
 
     def source(self):
         return 'mapbox'
