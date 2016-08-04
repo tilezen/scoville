@@ -34,7 +34,8 @@ def scoville_main(argv=None):
 
     mz_conf = config.get('mapzen')
     if mz_conf:
-        mz = MapzenProvider(mz_conf['host'], mz_conf['api_key'])
+        mz = MapzenProvider(mz_conf['host'], mz_conf.get('api_key'),
+                            mz_conf.get('old_tile_format'))
         providers.append(mz)
 
     mb_conf = config.get('mapbox')
