@@ -310,9 +310,6 @@ class MapzenProvider(object):
     def stats_counters(self):
         return [FeatureStats(), PropertyStats(), KindHistogram(['kind'])]
 
-    def source(self):
-        return 'mapzen'
-
 
 class MapboxProvider(object):
     def __init__(self, style, api_key):
@@ -328,16 +325,12 @@ class MapboxProvider(object):
     def stats_counters(self):
         return [FeatureStats(), PropertyStats(), KindHistogram(['class', 'type'])]
 
-    def source(self):
-        return 'mapbox'
-
 
 def run_provider(provider, coords):
     stats = dict(
         coord_z=coords[0],
         coord_x=coords[1],
-        coord_y=coords[2],
-        source=provider.source())
+        coord_y=coords[2])
     url = provider.tile_url(coords)
 
     with fetch(stats, url) as (headers, tile):

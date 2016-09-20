@@ -10,6 +10,20 @@ from scoville import RedshiftExporter, MapzenProvider, MapboxProvider, \
     RandomTile, run_provider
 
 
+def make_provider(conf):
+    typ = conf.get('type')
+
+    if typ == 'mapzen':
+        return MapzenProvider(conf['host'], conf.get('api_key'),
+                              conf.get('old_tile_format'))
+
+    elif typ == 'mapbox':
+        return MapboxProvider(conf['style'], conf['api_key'])
+
+    else:
+        raise ValueError("Unknown provider type %r." % (typ,))
+
+
 def scoville_main(argv=None):
     if argv is None:
         argv = sys.argv[1:]
@@ -30,18 +44,10 @@ def scoville_main(argv=None):
     logger = logging.getLogger('scoville')
 
     rs = RedshiftExporter(config['database'])
-    providers = []
 
-    mz_conf = config.get('mapzen')
-    if mz_conf:
-        mz = MapzenProvider(mz_conf['host'], mz_conf.get('api_key'),
-                            mz_conf.get('old_tile_format'))
-        providers.append(mz)
-
-    mb_conf = config.get('mapbox')
-    if mb_conf:
-        mb = MapboxProvider(mb_conf['style'], mb_conf['api_key'])
-        providers.append(mb)
+    providers = {}
+    for name, conf in config.get('providers', {}).items():
+        providers[name] = make_provider(conf)
 
     rand = RandomTile(config['tiles'])
 
@@ -52,8 +58,9 @@ def scoville_main(argv=None):
     while True:
         try:
             tile = rand.get_tile()
-            for p in providers:
+            for name, p in providers.items():
                 stats = run_provider(p, tile)
+                stats['source'] = name
                 stats['region'] = config['region']
                 rs.upload(stats)
 
