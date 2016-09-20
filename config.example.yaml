@@ -1,11 +1,13 @@
 # database connection string to Redshift to export the statistics
 database: dbname=scoville
 
-# configuration of where to find the provider (at the time of writing, only
-# mapzen is supported) tiles.
-mapzen:
-  host: vector.dev.mapzen.com
-  api_key: YOUR_API_KEY_HERE
+providers:
+  # configuration of where to find the provider (at the time of writing, only
+  # mapzen is supported) tiles.
+  mapzen:
+    type: mapzen
+    host: vector.dev.mapzen.com
+    api_key: YOUR_API_KEY_HERE
 
 # interval in seconds between grabbing a tile
 run_interval: 60
