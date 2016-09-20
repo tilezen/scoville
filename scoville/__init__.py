@@ -292,12 +292,15 @@ class KindHistogram(object):
 
 
 class MapzenProvider(object):
-    def __init__(self, hostname, api_key=None, old_tile_format=None):
+    def __init__(self, hostname, api_key=None, old_tile_format=None,
+                 url_prefix=None):
         self.hostname = hostname
         self.api_key = api_key
         self.url_format = 'vector/v1/all/%(z)d/%(x)d/%(y)d.mvt'
         if old_tile_format:
             self.url_format = 'osm/all/%(z)d/%(x)d/%(y)d.mvt'
+        if url_prefix:
+            self.url_format = url_prefix + self.url_format
 
     def tile_url(self, coords):
         url = ('http://%(host)s/' + self.url_format) % \
