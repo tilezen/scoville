@@ -140,7 +140,8 @@ def make_shapely_geom(feature):
             shape = mk_point(geom)
 
     elif typ == 2:
-        if len(geom) > 0 and len(geom[0]) > 0 and isinstance(geom[0][0], list):
+        if isinstance(geom, list) and len(geom) > 0 and \
+           len(geom[0]) > 0 and isinstance(geom[0][0], list):
             parts = []
             for g in geom:
                 parts.append(mk_linestring(g))
@@ -149,7 +150,8 @@ def make_shapely_geom(feature):
             shape = mk_linestring(geom)
 
     elif typ == 3:
-        if len(geom) > 0 and len(geom[0]) > 0 and isinstance(geom[0][0], list):
+        if isinstance(geom, list) and len(geom) > 0 and \
+           len(geom[0]) > 0 and isinstance(geom[0][0], list):
             parts = []
             for g in geom:
                 parts.append(mk_polygon(g))
@@ -293,12 +295,16 @@ class KindHistogram(object):
 
 class MapzenProvider(object):
     def __init__(self, hostname, api_key=None, old_tile_format=None,
-                 url_prefix=None):
+                 url_prefix=None, tile_size=None):
         self.hostname = hostname
         self.api_key = api_key
-        self.url_format = 'vector/v1/all/%(z)d/%(x)d/%(y)d.mvt'
         if old_tile_format:
             self.url_format = 'osm/all/%(z)d/%(x)d/%(y)d.mvt'
+        elif tile_size:
+            self.url_format = 'vector/v1/' + str(tile_size) + \
+                              '/all/%(z)d/%(x)d/%(y)d.mvt'
+        else:
+            self.url_format = 'vector/v1/all/%(z)d/%(x)d/%(y)d.mvt'
         if url_prefix:
             self.url_format = url_prefix + self.url_format
 
