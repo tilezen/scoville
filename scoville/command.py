@@ -16,7 +16,7 @@ def make_provider(conf):
     if typ == 'mapzen':
         return MapzenProvider(conf['host'], conf.get('api_key'),
                               conf.get('old_tile_format'),
-                              conf.get('url_prefix'))
+                              conf.get('url_prefix'), conf.get('tile_size'))
 
     elif typ == 'mapbox':
         return MapboxProvider(conf['style'], conf['api_key'])
