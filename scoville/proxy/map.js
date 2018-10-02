@@ -10,5 +10,5 @@ L.tileLayer('http://{s}.tile.stamen.com/toner/{z}/{x}/{y}.png', {
 L.tileLayer('http://localhost:{{ port }}/tiles/{z}/{x}/{y}.png', {
     attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a> contributors',
     maxZoom: 16,
-    opacity: 0.5,
+    opacity: 0.8,
 }).addTo(map);

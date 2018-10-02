@@ -71,11 +71,13 @@ class Handler(http.server.BaseHTTPRequestHandler):
             # hack to get 'water' => hue(240) = blue
             hue = (name.__hash__() + 192) % 360
             colour = 'hsl(%d, 100%%, 70%%)' % (hue,)
+            outline_colour = 'hsl(%d, 100%%, 30%%)' % (hue,)
             x = rect['x']
             y = rect['y']
             dx = rect['dx']
             dy = rect['dy']
-            draw.rectangle([x, y, x + dx, y + dy], fill=colour)
+            draw.rectangle([x, y, x + dx, y + dy], fill=colour,
+                           outline=outline_colour)
 
             text_w, text_h = font.getsize(name)
             if dx > text_w and dy > text_h:
