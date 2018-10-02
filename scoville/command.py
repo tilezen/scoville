@@ -13,6 +13,26 @@ def print_tree(node, prefix=''):
             click.echo('%s => %r' % (label, obj))
 
 
+_NAME_ALTERNATES = (
+    'int_name',
+    'loc_name',
+    'nat_name',
+    'official_name',
+    'old_name',
+    'reg_name',
+    'short_name',
+    'name_left',
+    'name_right',
+)
+
+
+def _is_name(k):
+    # return true if the key looks like a name
+    return k == u'name' or \
+        k.startswith(u'name:') or \
+        k in _NAME_ALTERNATES
+
+
 def summarise(features, kind_key):
     sizes = {}
     for feature in features:
@@ -22,14 +42,17 @@ def summarise(features, kind_key):
         props_size = feature.properties_size
         geom_cmds_size = feature.geom_cmds_size
         metadata_size = feature.size - (props_size + geom_cmds_size)
+        names_count = sum(1 for k in props.keys() if _is_name(k))
 
         if kind not in sizes:
-            sizes[kind] = dict(count=0, properties=0, geom_cmds=0, metadata=0)
+            sizes[kind] = dict(count=0, properties=0, geom_cmds=0, metadata=0,
+                               names=dict(count=0))
 
         sizes[kind]['count'] += 1
         sizes[kind]['properties'] += props_size
         sizes[kind]['geom_cmds'] += geom_cmds_size
         sizes[kind]['metadata'] += metadata_size
+        sizes[kind]['names']['count'] += names_count
 
     return sizes
 

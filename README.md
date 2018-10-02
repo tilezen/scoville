@@ -13,14 +13,17 @@ Running `scoville info --kind kind foo.mvt` on a [Nextzen](https://nextzen.org) 
 .water.features.bay.count => 2
 .water.features.bay.geom_cmds => 14
 .water.features.bay.metadata => 8
+.water.features.bay.names.count => 2
 .water.features.bay.properties => 50
 .water.features.riverbank.count => 169
 .water.features.riverbank.geom_cmds => 61962
 .water.features.riverbank.metadata => 774
+.water.features.riverbank.names.count => 176
 .water.features.riverbank.properties => 3419
 .water.features.water.count => 261
 .water.features.water.geom_cmds => 54333
 .water.features.water.metadata => 1155
+.water.features.water.names.count => 363
 .water.features.water.properties => 5770
 .water.metadata => 16
 .water.properties.keys.count => 40
@@ -28,7 +31,7 @@ Running `scoville info --kind kind foo.mvt` on a [Nextzen](https://nextzen.org) 
 .water.properties.values.count => 823
 ```
 
-This is showing that in the `water` layer, there were 2 `kind: bay` features, totalling 14 bytes for the commands to draw their geometry, 50 bytes to represent their property indexes, and 8 bytes to represent their metadata.
+This is showing that in the `water` layer, there were 2 `kind: bay` features, totalling 14 bytes for the commands to draw their geometry, 50 bytes to represent their property indexes, and 8 bytes to represent their metadata. The count, across all features, of properties that look like a name is given by the `.names.count`.
 
 Similar breakdowns are given for the other two observed `kind`s; `riverbank` and `water`.
 
