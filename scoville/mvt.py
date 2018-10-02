@@ -108,11 +108,11 @@ class Feature(object):
         # want the overall size of the feature but not its details).
 
         self._fid = None
-        self._tags = []
+        self._properties = []
         self._geom_type = GeomType.unknown
-        self._cmds_data = []
-        self._tags_size = 0
-        self._cmds_size = 0
+        self._geom_cmds_data = []
+        self._properties_size = 0
+        self._geom_cmds_size = 0
 
         msg = Message(self.data)
         for field in msg:
@@ -121,8 +121,8 @@ class Feature(object):
 
             elif field.tag == Feature.Tags.TAGS:
                 subfields = field.as_packed(WireType.varint)
-                self._tags.extend(s.as_uint32() for s in subfields)
-                self._tags_size += field.size
+                self._properties.extend(s.as_uint32() for s in subfields)
+                self._properties_size += field.size
 
             elif field.tag == Feature.Tags.GEOM_TYPE:
                 self._geom_type = GeomType(field.as_uint32())
@@ -130,8 +130,8 @@ class Feature(object):
             elif field.tag == Feature.Tags.GEOM_CMDS:
                 # don't unpack this now - it's easy enough to iterate over
                 # on-demand.
-                self._cmds_data.append(field)
-                self._cmds_size += field.size
+                self._geom_cmds_data.append(field)
+                self._geom_cmds_size += field.size
 
             else:
                 raise ValueError("Unknown Feature tag %d" % field.tag)
@@ -151,27 +151,38 @@ class Feature(object):
         return self._geom_type
 
     @property
-    def tags(self):
+    def properties(self):
+        """
+        The key-value properties of the Feature. Keys are always strings, but
+        values can be any of the MVT value types (strings, integers, floats or
+        bools).
+        """
+
         if not self.unpacked:
             self.__unpack()
-        tags = {}
-        for i in xrange(0, len(self._tags), 2):
-            k = self.keys[self._tags[i]]
-            v = self.values[self._tags[i+1]]
-            tags[k] = _decode_value(v)
-        return tags
+
+        # MVT encodes feature properties as a list of alternating key and
+        # value indices. the keys and values themselves are deduplicated
+        # in lists at the layer level (which were passed into the Feature
+        # constructor).
+        properties = {}
+        for i in xrange(0, len(self._properties), 2):
+            k = self.keys[self._properties[i]]
+            v = self.values[self._properties[i+1]]
+            properties[k] = _decode_value(v)
+        return properties
 
     @property
-    def tags_size(self):
+    def properties_size(self):
         if not self.unpacked:
             self.__unpack()
-        return self._tags_size
+        return self._properties_size
 
     @property
-    def cmds_size(self):
+    def geom_cmds_size(self):
         if not self.unpacked:
             self.__unpack()
-        return self._cmds_size
+        return self._geom_cmds_size
 
 
 class Layer(object):
@@ -273,7 +284,7 @@ class Tile(object):
     >>> t = Tile(data)
     >>> [layer.name for layer in t]
     [u'a layer']
-    >>> [layer.features[0].tags for layer in t]
+    >>> [layer.features[0].properties for layer in t]
     [{u'key': u'value'}]
     """
 

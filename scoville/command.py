@@ -16,19 +16,19 @@ def print_tree(node, prefix=''):
 def summarise(features, kind_key):
     sizes = {}
     for feature in features:
-        tags = feature.tags
-        kind = tags.get(kind_key)
+        props = feature.properties
+        kind = props.get(kind_key)
 
-        tags_size = feature.tags_size
-        cmds_size = feature.cmds_size
-        metadata_size = feature.size - (tags_size + cmds_size)
+        props_size = feature.properties_size
+        geom_cmds_size = feature.geom_cmds_size
+        metadata_size = feature.size - (props_size + geom_cmds_size)
 
         if kind not in sizes:
-            sizes[kind] = dict(count=0, tags=0, cmds=0, metadata=0)
+            sizes[kind] = dict(count=0, properties=0, geom_cmds=0, metadata=0)
 
         sizes[kind]['count'] += 1
-        sizes[kind]['tags'] += tags_size
-        sizes[kind]['cmds'] += cmds_size
+        sizes[kind]['properties'] += props_size
+        sizes[kind]['geom_cmds'] += geom_cmds_size
         sizes[kind]['metadata'] += metadata_size
 
     return sizes

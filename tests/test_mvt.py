@@ -26,7 +26,7 @@ class TestMVT(TestCase):
         features = list(water_layer)
         self.assertEqual(len(features), 1)
         feature = features[0]
-        self.assertEqual(feature.tags, {
+        self.assertEqual(feature.properties, {
             u'foo': u'bar',
             u'baz': u'foo',
         })
