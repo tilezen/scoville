@@ -1,8 +1,5 @@
 from scoville.pbf import Message, WireType
-from enum import Enum
-
-
-LAYER_TAG = 3
+from enum import Enum, IntEnum
 
 
 class GeomType(Enum):
@@ -12,6 +9,16 @@ class GeomType(Enum):
     polygon = 3
 
 
+class ValueTags(IntEnum):
+    STRING = 1
+    FLOAT = 2
+    DOUBLE = 3
+    INT64 = 4
+    UINT64 = 5
+    SINT64 = 6
+    BOOL = 7
+
+
 def _decode_value(data):
     msg = Message(data)
     value = None
@@ -19,25 +26,25 @@ def _decode_value(data):
 
     for field in msg:
         count += 1
-        if field.tag == 1:
+        if field.tag == ValueTags.STRING:
             value = field.as_string()
 
-        elif field.tag == 2:
+        elif field.tag == ValueTags.FLOAT:
             value = field.as_float()
 
-        elif field.tag == 3:
+        elif field.tag == ValueTags.DOUBLE:
             value = field.as_double()
 
-        elif field.tag == 4:
+        elif field.tag == ValueTags.INT64:
             value = field.as_int64()
 
-        elif field.tag == 5:
+        elif field.tag == ValueTags.UINT64:
             value = field.as_uint64()
 
-        elif field.tag == 6:
+        elif field.tag == ValueTags.SINT64:
             value = field.as_sint64()
 
-        elif field.tag == 7:
+        elif field.tag == ValueTags.BOOL:
             value = field.as_int32() != 0
 
         else:
@@ -53,6 +60,12 @@ def _decode_value(data):
 
 
 class Feature(object):
+
+    class Tags(IntEnum):
+        ID = 1
+        TAGS = 2
+        GEOM_TYPE = 3
+        GEOM_CMDS = 4
 
     def __init__(self, field, keys, values):
         self.keys = keys
@@ -71,18 +84,18 @@ class Feature(object):
 
         msg = Message(self.data)
         for field in msg:
-            if field.tag == 1:
+            if field.tag == Feature.Tags.ID:
                 self._fid = field.as_uint64()
 
-            elif field.tag == 2:
+            elif field.tag == Feature.Tags.TAGS:
                 subfields = field.as_packed(WireType.varint)
                 self._tags.extend(s.as_uint32() for s in subfields)
                 self._tags_size += field.size
 
-            elif field.tag == 3:
+            elif field.tag == Feature.Tags.GEOM_TYPE:
                 self._geom_type = GeomType(field.as_uint32())
 
-            elif field.tag == 4:
+            elif field.tag == Feature.Tags.GEOM_CMDS:
                 # don't unpack this now - it's easy enough to iterate over
                 # on-demand.
                 self._cmds_data.append(field)
@@ -134,41 +147,52 @@ class Layer(object):
     A layer is a container of features, plus some metadata.
     """
 
+    DEFAULT_VERSION = 1
+    DEFAULT_EXTENT = 4096
+
+    class Tags(IntEnum):
+        VERSION = 15
+        NAME = 1
+        FEATURES = 2
+        KEYS = 3
+        VALUES = 4
+        EXTENT = 5
+
     def __init__(self, field):
         data = field.as_memoryview()
 
-        self.version = 1
+        self.version = Layer.DEFAULT_VERSION
         self.name = None
         self.features = []
         self.keys = []
         self.values = []
-        self.extent = 4096
+        self.extent = Layer.DEFAULT_EXTENT
         self.size = field.size
         self.features_size = 0
         self.properties_size = 0
 
         msg = Message(data)
         for field in msg:
-            if field.tag == 15:
+            if field.tag == Layer.Tags.VERSION:
                 self.version = field.as_uint32()
 
-            elif field.tag == 1:
+            elif field.tag == Layer.Tags.NAME:
                 self.name = field.as_string()
 
-            elif field.tag == 2:
+            elif field.tag == Layer.Tags.FEATURES:
                 feature = Feature(field, self.keys, self.values)
                 self.features.append(feature)
                 self.features_size += field.size
 
-            elif field.tag == 3:
+            elif field.tag == Layer.Tags.KEYS:
                 self.keys.append(field.as_string())
                 self.properties_size += field.size
 
-            elif field.tag == 4:
+            elif field.tag == Layer.Tags.VALUES:
                 self.values.append(field.as_memoryview())
                 self.properties_size += field.size
 
-            elif field.tag == 5:
+            elif field.tag == Layer.Tags.EXTENT:
                 self.extent = field.as_uint32()
 
             else:
@@ -189,10 +213,10 @@ class TileIterator(object):
     def next(self):
         field = self.msg.next()
 
-        if field.tag != LAYER_TAG:
+        if field.tag != Tile.Tags.LAYER:
             raise ValueError(
                 "Expecting layer with tag %d, got tag %d instead."
-                % (LAYER_TAG, field.tag))
+                % (Tile.Tags.LAYER, field.tag))
 
         return Layer(field)
 
@@ -203,6 +227,9 @@ class Tile(object):
     """
     A tile is an iterator over the layers in the tile.
     """
+
+    class Tags(IntEnum):
+        LAYER = 3
 
     def __init__(self, data):
         self.data = data
