@@ -3,6 +3,12 @@ from enum import Enum, IntEnum
 
 
 class GeomType(Enum):
+    """
+    MVT uses an enumeration to indicate whether the commands in a geometry
+    should be considered as points, linestrings or polygons. See the MVT spec
+    for more information.
+    """
+
     unknown = 0
     point = 1
     linestring = 2
@@ -10,6 +16,12 @@ class GeomType(Enum):
 
 
 class ValueTags(IntEnum):
+    """
+    MVT stores properties as string keys and compound value types. The value
+    types are indicated by which one of the following tags are present in the
+    value message.
+    """
+
     STRING = 1
     FLOAT = 2
     DOUBLE = 3
@@ -20,6 +32,13 @@ class ValueTags(IntEnum):
 
 
 def _decode_value(data):
+    """
+    Decode an MVT Value message, returning the Python type that represents it.
+    """
+
+    # since Value messages contain only one value, it didn't seem necessary to
+    # represent it as a Python class.
+
     msg = Message(data)
     value = None
     count = 0
@@ -51,6 +70,8 @@ def _decode_value(data):
             raise ValueError("Unexpected tag %d while decoding value"
                              % (field.tag,))
 
+    # the MVT spec says that there should be one and only one field in the
+    # Value message, so check for that.
     if value is None:
         raise ValueError("Found no fields when decoding value")
     if count > 1:
@@ -60,6 +81,13 @@ def _decode_value(data):
 
 
 class Feature(object):
+    """
+    A Feature is a geometry and set of key-value properties, plus an optional
+    ID.
+
+    The geometry and key-value properties are generated on-demand to reduce
+    memory usage.
+    """
 
     class Tags(IntEnum):
         ID = 1
@@ -75,6 +103,10 @@ class Feature(object):
         self.size = field.size
 
     def __unpack(self):
+        # unpack is called lazily, in case we don't need to decode this feature
+        # at all (perhaps it's in a layer we're not interested in, or simply
+        # want the overall size of the feature but not its details).
+
         self._fid = None
         self._tags = []
         self._geom_type = GeomType.unknown
@@ -206,6 +238,9 @@ class Layer(object):
 
 
 class TileIterator(object):
+    """
+    TileIterator is an iterator over the layers in a tile.
+    """
 
     def __init__(self, data):
         self.msg = Message(data)
@@ -224,8 +259,22 @@ class TileIterator(object):
 
 
 class Tile(object):
-    """
-    A tile is an iterator over the layers in the tile.
+    r"""
+    A tile is an iterable collection of layers in an MVT tile.
+
+    It can be constructed from a string, buffer or memoryview and iterated
+    over to yield each layer in turn.
+
+    >>> from scoville.mvt import Tile
+    >>> data = '\x1a\x2a\x0a\x07\x61\x20\x6c\x61\x79\x65\x72\x12\x0c\x12'
+    >>> data += '\x02\x00\x00\x18\x01\x22\x04\x09\x00\x80\x40\x1a\x03\x6b'
+    >>> data += '\x65\x79\x22\x07\x0a\x05\x76\x61\x6c\x75\x65\x28\x80\x20'
+    >>> data += '\x78\x01'
+    >>> t = Tile(data)
+    >>> [layer.name for layer in t]
+    [u'a layer']
+    >>> [layer.features[0].tags for layer in t]
+    [{u'key': u'value'}]
     """
 
     class Tags(IntEnum):
