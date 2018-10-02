@@ -3,6 +3,7 @@ Scoville - A tool to attribute size information in MVT tiles.
 Current scoville commands:
 
 * `info`: Prints size and item count information about an MVT tile.
+* `proxy`: Serves a treemap visualisation of tiles on a local HTTP server.
 
 ### Info command ###
 
@@ -50,6 +51,20 @@ python -m SimpleHTTPServer
 ```
 
 And visit [localhost:8000](http://localhost:8000) in a browser.
+
+### Proxy command ###
+
+The proxy command will run a local tile server which, given an upstream MVT tile server, returns a treemap visualisation of each MVT tile. This can be useful to get a broad understanding of which layers take up most space, and to spot any zoom levels or tiles with unexpected distributions of space.
+
+Run it like this, replacing the URL and/or API key as appropriate:
+
+```
+scoville proxy "https://tile.nextzen.org/tilezen/vector/v1/512/all/{z}/{x}/{y}.mvt?api_key=YOUR_API_KEY"
+```
+
+This will run a server on [localhost:8000](http://localhost:8000) by default (use `--port` option to change the port). Navigating to that page should show you something like:
+
+![Screenshot of the proxy server](doc/proxy_screenshot.png)
 
 ## Install on Ubuntu:
 
