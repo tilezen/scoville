@@ -116,5 +116,63 @@ def info(mvt_file, kind, d3_json):
         print_tree(sizes)
 
 
+def read_urls(file_name, url_pattern):
+    with open(file_name, 'r') as fh:
+        for line in fh:
+            zxy = line.split(' ', 1)[0]
+            z, x, y = map(int, zxy.split('/', 2))
+
+            u = url_pattern \
+                .replace('{z}', str(z)) \
+                .replace('{x}', str(x)) \
+                .replace('{y}', str(y))
+
+            yield u
+
+
+@cli.command()
+@click.argument('tiles_file', required=1)
+@click.argument('url', required=1)
+@click.option('--percentiles', '-p', multiple=True, type=float,
+              help='Percentiles to display. Use decimal floats, i.e: 99.9, '
+              'not 99_9. Can be used multiple times.')
+@click.option('--cache/--no-cache', default=False, help='Use a cache for '
+              'tiles. Can speed up multiple runs considerably.')
+@click.option('--nprocs', '-j', default=1, type=int, help='Number of '
+              'processes to use to download and do tile size aggregation.')
+def percentiles(tiles_file, url, percentiles, cache, nprocs):
+    """
+    Download a bunch of tiles and display the percentiles of size, breakdown by
+    layer, and so forth.
+
+    The tiles to download should be listed in TILES_FILE, one per line as
+    'z/x/y'. The URL to fetch them from should contain {z}, {x} and {y}
+    replacements.
+    """
+
+    from scoville.percentiles import calculate_percentiles
+
+    if not percentiles:
+        percentiles = [50, 90, 99, 99.9]
+
+    tiles = read_urls(tiles_file, url)
+    result = calculate_percentiles(tiles, percentiles, cache, nprocs)
+
+    fmt = '%20s' + ' %8d' * len(percentiles)
+    header = '%20s' % ('TOTAL',)
+    for percentile in percentiles:
+        pct_header = 'p%r' % (percentile,)
+        header += ' %8s' % (pct_header,)
+    click.secho(header, fg='green', bold=True)
+    for name in sorted(result.keys()):
+        percentiles = result[name]
+        line = fmt % tuple([name] + percentiles)
+        click.secho(line, bold=name.startswith('~'))
+
+
 def scoville_main():
     cli()
+
+
+if __name__ == '__main__':
+    scoville_main()
