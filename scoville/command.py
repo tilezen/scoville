@@ -87,6 +87,14 @@ def cli():
 @click.option('--d3-json/--no-d3-json', default=False,
               help='Output D3 JSON to use with the Treemap visualisation.')
 def info(mvt_file, kind, d3_json):
+    """
+    Prints the detailed breakdown of bytes in MVT_FILE. If KIND is provided,
+    then this property is used to further break down features into categories.
+
+    Alternatively, set --d3-json to dump a file suitable for using in D3's
+    treemap visualisation.
+    """
+
     with open(mvt_file, 'r') as fh:
         tile = Tile(fh.read())
 
@@ -114,6 +122,21 @@ def info(mvt_file, kind, d3_json):
         print(json.dumps(d3_output(sizes, name=mvt_file)))
     else:
         print_tree(sizes)
+
+
+@cli.command()
+@click.argument('url', required=1)
+@click.option('--port', default=8000, help='Port to serve tiles on.')
+def proxy(url, port):
+    """
+    Proxies vector tiles available from URL to a local server on PORT, serving
+    tiles showing the breakdown of size by layer.
+
+    URL should contain {z}, {x} and {y} replacements.
+    """
+
+    from scoville.proxy import serve_http
+    serve_http(url, port)
 
 
 def scoville_main():
