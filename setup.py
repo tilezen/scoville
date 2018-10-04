@@ -30,6 +30,9 @@ setup(
     zip_safe=False,
     install_requires=[
         'click',
+        'PIL',
+        'requests',
+        'squarify',
     ],
     entry_points=dict(
         console_scripts=[
