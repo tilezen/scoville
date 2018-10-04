@@ -10,6 +10,47 @@ from scoville.mvt import Tile
 TILE_PATTERN = re.compile('^/tiles/([0-9]+)/([0-9]+)/([0-9]+)\.png$')
 
 
+class Treemap(object):
+    """
+    Draws a Treemap of layer sizes within the tile.
+    """
+
+    def __call__(im, sizes):
+        from PIL import Image, ImageDraw, ImageFont
+
+        width = height = 256
+        im = Image.new("RGB", (width, height), "black")
+
+        values = squarify.normalize_sizes([r[0] for r in sizes], width, height)
+        rects = squarify.squarify(values, 0, 0, width, height)
+        names = [r[1] for r in sizes]
+
+        draw = ImageDraw.Draw(im)
+        font = ImageFont.load_default()
+
+        for rect, name in reversed(zip(rects, names)):
+            # hack to get 'water' => hue(240) = blue
+            hue = (name.__hash__() + 192) % 360
+            colour = 'hsl(%d, 100%%, 70%%)' % (hue,)
+            outline_colour = 'hsl(%d, 100%%, 30%%)' % (hue,)
+            x = rect['x']
+            y = rect['y']
+            dx = rect['dx']
+            dy = rect['dy']
+            draw.rectangle([x, y, x + dx, y + dy], fill=colour,
+                           outline=outline_colour)
+
+            text_w, text_h = font.getsize(name)
+            if dx > text_w and dy > text_h:
+                centre = (x + dx / 2, y + dy / 2)
+                top_left = (centre[0] - text_w / 2,
+                            centre[1] - text_h / 2)
+                draw.text(top_left, name, fill='black', font=font)
+
+        del draw
+        return im
+
+
 class Handler(http.server.BaseHTTPRequestHandler):
     def do_GET(self):
         if self.path in ("/", "/index.html", "/style.css", "/map.js"):
@@ -55,38 +96,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
         self.send_png(sizes)
 
     def send_png(self, sizes):
-        from PIL import Image, ImageDraw, ImageFont
-
-        width = height = 256
-
-        values = squarify.normalize_sizes([r[0] for r in sizes], width, height)
-        rects = squarify.squarify(values, 0, 0, width, height)
-        names = [r[1] for r in sizes]
-
-        im = Image.new("RGB", (width, height), "black")
-        draw = ImageDraw.Draw(im)
-        font = ImageFont.load_default()
-
-        for rect, name in reversed(zip(rects, names)):
-            # hack to get 'water' => hue(240) = blue
-            hue = (name.__hash__() + 192) % 360
-            colour = 'hsl(%d, 100%%, 70%%)' % (hue,)
-            outline_colour = 'hsl(%d, 100%%, 30%%)' % (hue,)
-            x = rect['x']
-            y = rect['y']
-            dx = rect['dx']
-            dy = rect['dy']
-            draw.rectangle([x, y, x + dx, y + dy], fill=colour,
-                           outline=outline_colour)
-
-            text_w, text_h = font.getsize(name)
-            if dx > text_w and dy > text_h:
-                centre = (x + dx / 2, y + dy / 2)
-                top_left = (centre[0] - text_w / 2,
-                            centre[1] - text_h / 2)
-                draw.text(top_left, name, fill='black', font=font)
-
-        del draw
+        im = self.server.renderer(sizes)
 
         self.send_response(200)
         self.end_headers()
@@ -109,13 +119,14 @@ class Handler(http.server.BaseHTTPRequestHandler):
 
 
 class ThreadedHTTPServer(socketserver.ThreadingMixIn, http.server.HTTPServer):
-    def __init__(self, server_address, handler_class, url_pattern):
+    def __init__(self, server_address, handler_class, url_pattern, renderer):
         http.server.HTTPServer.__init__(self, server_address, handler_class)
         self.url_pattern = url_pattern
+        self.renderer = renderer
 
 
-def serve_http(url, port):
-    httpd = ThreadedHTTPServer(("", port), Handler, url)
+def serve_http(url, port, renderer):
+    httpd = ThreadedHTTPServer(("", port), Handler, url, renderer)
     print("Listening on port %d. Point your browser towards "
           "http://localhost:%d/" % (port, port))
     httpd.serve_forever()

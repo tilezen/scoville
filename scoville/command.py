@@ -135,8 +135,8 @@ def proxy(url, port):
     URL should contain {z}, {x} and {y} replacements.
     """
 
-    from scoville.proxy import serve_http
-    serve_http(url, port)
+    from scoville.proxy import serve_http, Treemap
+    serve_http(url, port, Treemap())
 
 
 def read_urls(file_name, url_pattern):
