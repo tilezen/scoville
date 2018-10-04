@@ -15,8 +15,17 @@ class Treemap(object):
     Draws a Treemap of layer sizes within the tile.
     """
 
-    def __call__(im, sizes):
+    def tiles_for(self, z, x, y):
+        return [(z, x, y)]
+
+    def render(self, tiles):
         from PIL import Image, ImageDraw, ImageFont
+
+        tile = tiles.values()[0]
+        sizes = []
+        for layer in tile:
+            sizes.append((layer.size, layer.name))
+        sizes.sort(reverse=True)
 
         width = height = 256
         im = Image.new("RGB", (width, height), "black")
@@ -68,7 +77,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
             if 0 <= z < 16 and \
                0 <= x < (1 << z) and \
                0 <= y < (1 << z):
-                self.send_tile_breakdown(z, x, y)
+                self.send_tile(z, x, y)
                 return
 
         self.error_not_found()
@@ -76,27 +85,22 @@ class Handler(http.server.BaseHTTPRequestHandler):
     def error_not_found(self):
         self.send_response(requests.codes.not_found)
 
-    def send_tile_breakdown(self, z, x, y):
-        url = self.server.url_pattern \
-                         .replace("{z}", str(z)) \
-                         .replace("{x}", str(x)) \
-                         .replace("{y}", str(y))
+    def send_tile(self, z, x, y):
+        tiles = {}
+        for z, x, y in self.server.renderer.tiles_for(z, x, y):
+            url = self.server.url_pattern \
+                             .replace("{z}", str(z)) \
+                             .replace("{x}", str(x)) \
+                             .replace("{y}", str(y))
 
-        res = requests.get(url)
-        if res.status_code != requests.codes.ok:
-            self.send_response(res.status_code)
-            return
+            res = requests.get(url)
+            if res.status_code != requests.codes.ok:
+                self.send_response(res.status_code)
+                return
 
-        tile = Tile(res.content)
-        sizes = []
-        for layer in tile:
-            sizes.append((layer.size, layer.name))
-        sizes.sort(reverse=True)
+            tiles[(z, x, y)] = Tile(res.content)
 
-        self.send_png(sizes)
-
-    def send_png(self, sizes):
-        im = self.server.renderer(sizes)
+        im = self.server.renderer.render(tiles)
 
         self.send_response(200)
         self.end_headers()
