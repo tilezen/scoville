@@ -172,7 +172,7 @@ def calculate_percentiles(tile_urls, percentiles, cache, nprocs):
     """
     Fetch tiles and calculate the percentile sizes in total and per-layer.
 
-    Percentiles should be given as a list of decimal numbers out of 100,
+    Percentiles should be given as a list of decimal numbers between 0 and 100,
     i.e: [50, 90, 99].
 
     Cache, if true, uses a local disk cache for the tiles. This can be very
