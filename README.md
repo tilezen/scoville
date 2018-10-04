@@ -5,6 +5,7 @@ Current scoville commands:
 * `info`: Prints size and item count information about an MVT tile.
 * `proxy`: Serves a treemap visualisation of tiles on a local HTTP server.
 * `percentiles`: Calculate the percentile tile sizes for a set of MVT tiles.
+* `heatmap`: Serves a heatmap visualisation of tile sizes on a local HTTP server.
 
 ### Info command ###
 
@@ -95,6 +96,35 @@ Will output something like:
 ```
 
 Note that the `~total` entry is **not** the total of the column above it; it's the percentile of total tile size. In other words, if we had three tiles with three layers, and each tile had a single, different layer taking up 1000 bytes and two layers taking up 10 bytes, then each tile is 1020 bytes and that would be the p50 `~total`. However, the p50 on each individual layer would only be 10 bytes.
+
+
+### Heatmap command ###
+
+Runs a local tile server showing heatmap tiles. The darker the colour, the larger the tile is. Each 256x256 tile is made up of an 8x8 heat grid, so the smaller squares you'll see represent tiles at a zoom 3 levels down from the level you're viewing at. This stops at z16, so you'll see the squares getting coarser as you approach that zoom.
+
+The mapping between tile size and colour is:
+
+ * <50kB: `#ffffff`
+ * <100kB: `#fff7ec`
+ * <150kB: `#fee8c8`
+ * <200kB: `#fdd49e`
+ * <250kB: `#fdbb84`
+ * <300kB: `#fc8d59`
+ * <500kB: `#ef6548`
+ * <750kB: `#d7301f`
+ * <1000kB: `#990000`
+ * >=1000kB: `#000000`
+
+To run it:
+
+```
+scoville heatmap "https://tile.nextzen.org/tilezen/vector/v1/512/all/{z}/{x}/{y}.mvt?api_key=YOUR_API_KEY"
+```
+
+This will run a server on [localhost:8000](http://localhost:8000) by default (use `--port` option to change the port). Navigating to that page should show you something like:
+
+![Screenshot of the heatmap server](doc/heatmap_screenshot.png)
+
 
 ## Install on Ubuntu:
 

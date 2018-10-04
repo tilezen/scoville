@@ -234,6 +234,46 @@ def percentiles(tiles_file, url, percentiles, cache, nprocs, output_format):
         raise ValueError('Unknown output format %r' % (output_format,))
 
 
+@cli.command()
+@click.argument('url', required=1)
+@click.option('--port', default=8000, help='Port to serve tiles on.')
+def heatmap(url, port):
+    """
+    Serves a heatmap of tile sizes on localhost:PORT.
+
+    URL should contain {z}, {x} and {y} replacements.
+    """
+
+    from scoville.proxy import serve_http, Heatmap
+
+    def colour_map(size):
+        kb = size / 1024
+
+        if kb < 50:
+            return '#ffffff'
+        elif kb < 100:
+            return '#fff7ec'
+        elif kb < 150:
+            return '#fee8c8'
+        elif kb < 200:
+            return '#fdd49e'
+        elif kb < 250:
+            return '#fdbb84'
+        elif kb < 300:
+            return '#fc8d59'
+        elif kb < 500:
+            return '#ef6548'
+        elif kb < 750:
+            return '#d7301f'
+        elif kb < 1000:
+            return '#990000'
+        else:
+            return '#000000'
+
+    heatmap = Heatmap(3, 16, colour_map)
+    serve_http(url, port, heatmap)
+
+
 def scoville_main():
     cli()
 

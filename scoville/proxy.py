@@ -16,12 +16,12 @@ class Treemap(object):
     """
 
     def tiles_for(self, z, x, y):
-        return [(z, x, y)]
+        return {0: (z, x, y)}
 
     def render(self, tiles):
         from PIL import Image, ImageDraw, ImageFont
 
-        tile = tiles.values()[0]
+        tile = tiles[0]
         sizes = []
         for layer in tile:
             sizes.append((layer.size, layer.name))
@@ -60,6 +60,55 @@ class Treemap(object):
         return im
 
 
+class Heatmap(object):
+    """
+    Renders each tile as a heatmap.
+    """
+
+    def __init__(self, sub_zooms, max_zoom, colour_map):
+        self.sub_zooms = sub_zooms
+        self.max_zoom = max_zoom
+        self.colour_map = colour_map
+
+    def tiles_for(self, z, x, y):
+        sub_z = min(z + self.sub_zooms, self.max_zoom)
+        dz = sub_z - z
+        width = 1 << dz
+        tiles = {}
+        for dx in xrange(0, width):
+            for dy in xrange(0, width):
+                tiles[(dx, dy)] = (sub_z, (x << dz) + dx, (y << dz) + dy)
+        return tiles
+
+    def render(self, tiles):
+        from PIL import Image, ImageDraw
+
+        max_coord = max(tiles.keys())
+        assert max_coord[0] == max_coord[1]
+        ntiles = max_coord[0] + 1
+        assert len(tiles) == ntiles ** 2
+
+        width = height = 256
+        im = Image.new("RGB", (width, height), "black")
+
+        draw = ImageDraw.Draw(im)
+
+        scale = width / ntiles
+        assert width == scale * ntiles
+
+        for x in xrange(0, ntiles):
+            for y in xrange(0, ntiles):
+                size = len(tiles[(x, y)].data)
+                colour = self.colour_map(size)
+
+                draw.rectangle(
+                    [x * scale, y * scale, (x+1) * scale, (y+1) * scale],
+                    fill=colour)
+
+        del draw
+        return im
+
+
 class Handler(http.server.BaseHTTPRequestHandler):
     def do_GET(self):
         if self.path in ("/", "/index.html", "/style.css", "/map.js"):
@@ -86,23 +135,35 @@ class Handler(http.server.BaseHTTPRequestHandler):
         self.send_response(requests.codes.not_found)
 
     def send_tile(self, z, x, y):
-        tiles = {}
-        for z, x, y in self.server.renderer.tiles_for(z, x, y):
+        from requests_futures.sessions import FuturesSession
+
+        session = FuturesSession()
+
+        futures = {}
+        tile_map = self.server.renderer.tiles_for(z, x, y)
+        for name, coord in tile_map.iteritems():
+            z, x, y = coord
             url = self.server.url_pattern \
                              .replace("{z}", str(z)) \
                              .replace("{x}", str(x)) \
                              .replace("{y}", str(y))
 
-            res = requests.get(url)
+            futures[name] = session.get(url)
+
+        tiles = {}
+        for name, fut in futures.iteritems():
+            res = fut.result()
+
             if res.status_code != requests.codes.ok:
                 self.send_response(res.status_code)
                 return
 
-            tiles[(z, x, y)] = Tile(res.content)
+            tiles[name] = Tile(res.content)
 
         im = self.server.renderer.render(tiles)
 
         self.send_response(200)
+        self.send_header('Cache-control', 'max-age=300')
         self.end_headers()
 
         im.save(self.wfile, 'PNG')
