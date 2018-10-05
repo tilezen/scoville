@@ -32,6 +32,7 @@ setup(
         'click',
         'PIL',
         'requests',
+        'requests_futures',
         'squarify',
     ],
     entry_points=dict(
