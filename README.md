@@ -4,6 +4,7 @@ Current scoville commands:
 
 * `info`: Prints size and item count information about an MVT tile.
 * `proxy`: Serves a treemap visualisation of tiles on a local HTTP server.
+* `percentiles`: Calculate the percentile tile sizes for a set of MVT tiles.
 
 ### Info command ###
 
@@ -65,6 +66,35 @@ scoville proxy "https://tile.nextzen.org/tilezen/vector/v1/512/all/{z}/{x}/{y}.m
 This will run a server on [localhost:8000](http://localhost:8000) by default (use `--port` option to change the port). Navigating to that page should show you something like:
 
 ![Screenshot of the proxy server](doc/proxy_screenshot.png)
+
+### Percentiles command ###
+
+Downloads a set of tiles and calculates percentile tile sizes, both total for the tile and per-layer within the tile. This can be useful for measuring the changes in tile size across different versions of tiles, and indicating which layers are contributing the most to outlier sizes.
+
+For example:
+
+```
+echo "0/0/0" > tiles.txt
+scoville percentiles --cache tiles.txt https://tile.nextzen.org/tilezen/vector/v1/512/all/{z}/{x}/{y}.mvt?api_key=YOUR_API_KEY
+```
+
+Will output something like:
+
+```
+               TOTAL      p50      p90      p99    p99.9
+          boundaries    68731    68731    68731    68731
+           buildings       19       19       19       19
+               earth   110378   110378   110378   110378
+             landuse       17       17       17       17
+              places   471086   471086   471086   471086
+                pois       14       14       14       14
+               roads       15       15       15       15
+             transit       17       17       17       17
+               water   404996   404996   404996   404996
+              ~total  1055273  1055273  1055273  1055273
+```
+
+Note that the `~total` entry is **not** the total of the column above it; it's the percentile of total tile size. In other words, if we had three tiles with three layers, and each tile had a single, different layer taking up 1000 bytes and two layers taking up 10 bytes, then each tile is 1020 bytes and that would be the p50 `~total`. However, the p50 on each individual layer would only be 10 bytes.
 
 ## Install on Ubuntu:
 
