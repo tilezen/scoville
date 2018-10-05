@@ -153,6 +153,46 @@ def read_urls(file_name, url_pattern):
             yield u
 
 
+def _percentiles_output_text(percentiles, result):
+    """
+    Output results to the console as columns of text, using ANSI colours where
+    available.
+    """
+
+    fmt = '%20s' + ' %8d' * len(percentiles)
+    header = '%20s' % ('TOTAL',)
+    for percentile in percentiles:
+        pct_header = 'p%r' % (percentile,)
+        header += ' %8s' % (pct_header,)
+    click.secho(header, fg='green', bold=True)
+    for name in sorted(result.keys()):
+        percentiles = result[name]
+        line = fmt % tuple([name] + percentiles)
+        click.secho(line, bold=name.startswith('~'))
+
+
+def _percentiles_output_csv(percentiles, result):
+    """
+    Output text to the console as a CSV file.
+    """
+
+    import csv
+    from sys import stdout
+
+    writer = csv.writer(stdout)
+
+    headers = ['Layer']
+    for percentile in percentiles:
+        headers.append('p%r' % (percentile,))
+    writer.writerow(headers)
+
+    for name in sorted(result.keys()):
+        line = [name]
+        for pct in result[name]:
+            line.append(str(pct))
+        writer.writerow(line)
+
+
 @cli.command()
 @click.argument('tiles_file', required=1)
 @click.argument('url', required=1)
@@ -163,7 +203,10 @@ def read_urls(file_name, url_pattern):
               'tiles. Can speed up multiple runs considerably.')
 @click.option('--nprocs', '-j', default=1, type=int, help='Number of '
               'processes to use to download and do tile size aggregation.')
-def percentiles(tiles_file, url, percentiles, cache, nprocs):
+@click.option('--output-format', '-f', type=click.Choice(['text', 'csv']),
+              default='text', help='Format to use when writing results to '
+              'the console.')
+def percentiles(tiles_file, url, percentiles, cache, nprocs, output_format):
     """
     Download a bunch of tiles and display the percentiles of size, breakdown by
     layer, and so forth.
@@ -181,16 +224,14 @@ def percentiles(tiles_file, url, percentiles, cache, nprocs):
     tiles = read_urls(tiles_file, url)
     result = calculate_percentiles(tiles, percentiles, cache, nprocs)
 
-    fmt = '%20s' + ' %8d' * len(percentiles)
-    header = '%20s' % ('TOTAL',)
-    for percentile in percentiles:
-        pct_header = 'p%r' % (percentile,)
-        header += ' %8s' % (pct_header,)
-    click.secho(header, fg='green', bold=True)
-    for name in sorted(result.keys()):
-        percentiles = result[name]
-        line = fmt % tuple([name] + percentiles)
-        click.secho(line, bold=name.startswith('~'))
+    if output_format == 'text':
+        _percentiles_output_text(percentiles, result)
+
+    elif output_format == 'csv':
+        _percentiles_output_csv(percentiles, result)
+
+    else:
+        raise ValueError('Unknown output format %r' % (output_format,))
 
 
 def scoville_main():
