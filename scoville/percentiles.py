@@ -55,6 +55,16 @@ def _fetch_cache(url):
     return data
 
 
+def fetch(url, cache=False):
+    """
+    Fetch a tile from url, using cache if cache=True.
+    """
+
+    if cache:
+        return _fetch_cache(url)
+    return _fetch_http(url)
+
+
 class Aggregator(object):
     """
     Core of the algorithm. Fetches tiles and aggregates their total and
@@ -76,33 +86,72 @@ class Aggregator(object):
         for layer in tile:
             self.results[layer.name].append(layer.size)
 
+    # encode a message to be sent over the "wire" from a worker to the parent
+    # process. we use msgpack encoding rather than pickle, as pickle was
+    # producing some very large messages.
+    def encode(self):
+        from msgpack import packb
+        return packb(self.results)
+
+    def merge_decode(self, data):
+        from msgpack import unpackb
+        results = unpackb(data)
+        for k, v in results.iteritems():
+            self.results[k].extend(v)
+
+
+class LargestN(object):
+    """
+    Keeps a list of the largest N tiles for each layer.
+    """
+
+    def __init__(self, num, cache=False):
+        self.num = num
+        self.fetch_fn = _fetch_http
+        if cache:
+            self.fetch_fn = _fetch_cache
+
+        self.results = defaultdict(list)
+
+    def _insert(self, name, size, url):
+        largest = self.results.get(name, [])
+        largest.append((size, url))
+        if len(largest) > self.num:
+            largest.sort(reverse=True)
+            del largest[self.num:]
+        self.results[name] = largest
+
+    def add(self, tile_url):
+        data = self.fetch_fn(tile_url)
+        tile = Tile(data)
+        for layer in tile:
+            self._insert(layer.name, layer.size, tile_url)
+
+    def encode(self):
+        from msgpack import packb
+        return packb(self.results)
+
+    def merge_decode(self, data):
+        from msgpack import unpackb
+        results = unpackb(data)
+        for name, values in results.iteritems():
+            for size, url in values:
+                self._insert(name, size, url)
+
 
 # special object to tell worker threads to exit
 class Sentinel(object):
     pass
 
 
-# encode a message to be sent over the "wire" from a worker to the parent
-# process. we use msgpack encoding rather than pickle, as pickle was producing
-# some very large messages.
-def mp_encode(data):
-    from msgpack import packb
-    return packb(data)
-
-
-def mp_decode(data):
-    from msgpack import unpackb
-    return unpackb(data)
-
-
-def worker(input_queue, output_queue, cache):
+def worker(input_queue, output_queue, factory_fn):
     """
     Worker for multi-processing. Reads tasks from a queue and feeds them into
     the Aggregator. When all tasks are done it reads a Sentinel and sends the
     aggregated result back on the output queue.
     """
 
-    agg = Aggregator(cache)
+    agg = factory_fn()
 
     while True:
         obj = input_queue.get()
@@ -113,10 +162,10 @@ def worker(input_queue, output_queue, cache):
         agg.add(obj)
         input_queue.task_done()
 
-    output_queue.put(mp_encode(agg.results))
+    output_queue.put(agg.encode())
 
 
-def parallel(tile_urls, cache, nprocs):
+def parallel(tile_urls, factory_fn, nprocs):
     """
     Fetch percentile data in parallel, using nprocs processes.
 
@@ -132,7 +181,7 @@ def parallel(tile_urls, cache, nprocs):
 
     workers = []
     for i in xrange(0, nprocs):
-        w = Process(target=worker, args=(input_queue, output_queue, cache))
+        w = Process(target=worker, args=(input_queue, output_queue, factory_fn))
         w.start()
         workers.append(w)
 
@@ -148,21 +197,19 @@ def parallel(tile_urls, cache, nprocs):
 
     # after we've queued the Sentinels, each worker should output an aggregated
     # result on the output queue.
-    result = defaultdict(list)
+    agg = factory_fn()
     for i in xrange(0, nprocs):
-        worker_result = mp_decode(output_queue.get())
-        for k, v in worker_result.iteritems():
-            result[k].extend(v)
+        agg.merge_decode(output_queue.get())
 
     # and the worker should have exited, so we can clean up the processes.
     for w in workers:
         w.join()
 
-    return result
+    return agg.results
 
 
-def sequential(tile_urls, cache):
-    agg = Aggregator(cache)
+def sequential(tile_urls, factory_fn):
+    agg = factory_fn()
     for tile_url in tile_urls:
         agg.add(tile_url)
     return agg.results
@@ -183,19 +230,51 @@ def calculate_percentiles(tile_urls, percentiles, cache, nprocs):
     larger number to make concurrent nework requests for tiles.
     """
 
+    # check that the input values are in the range we need
+    for p in percentiles:
+        assert 0 <= p <= 100
+
+    def factory_fn():
+        return Aggregator(cache)
+
     if nprocs > 1:
-        results = parallel(tile_urls, cache, nprocs)
+        results = parallel(tile_urls, factory_fn, nprocs)
     else:
-        results = sequential(tile_urls, cache)
+        results = sequential(tile_urls, factory_fn)
 
     pct = {}
     for label, values in results.iteritems():
         values.sort()
         pcts = []
         for p in percentiles:
-            i = int(len(values) * p / 100.0)
+            i = min(len(values) - 1, int(len(values) * p / 100.0))
             pcts.append(values[i])
 
         pct[label] = pcts
 
     return pct
+
+
+def calculate_outliers(tile_urls, num_outliers, cache, nprocs):
+    """
+    Fetch tiles and calculate the outlier tiles per layer.
+
+    The number of outliers is per layer - the largest N.
+
+    Cache, if true, uses a local disk cache for the tiles. This can be very
+    useful if re-running percentile calculations.
+
+    Nprocs is the number of processes to use for both fetching and aggregation.
+    Even on a system with a single CPU, it can be worth setting this to a
+    larger number to make concurrent nework requests for tiles.
+    """
+
+    def factory_fn():
+        return LargestN(num_outliers, cache)
+
+    if nprocs > 1:
+        results = parallel(tile_urls, factory_fn, nprocs)
+    else:
+        results = sequential(tile_urls, factory_fn)
+
+    return results
