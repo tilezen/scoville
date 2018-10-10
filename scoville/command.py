@@ -249,23 +249,23 @@ def heatmap(url, port):
     def colour_map(size):
         kb = size / 1024
 
-        if kb < 50:
+        if kb < 6:
             return '#ffffff'
-        elif kb < 100:
+        elif kb < 12:
             return '#fff7ec'
-        elif kb < 150:
+        elif kb < 25:
             return '#fee8c8'
-        elif kb < 200:
+        elif kb < 50:
             return '#fdd49e'
-        elif kb < 250:
+        elif kb < 75:
             return '#fdbb84'
-        elif kb < 300:
+        elif kb < 125:
             return '#fc8d59'
-        elif kb < 500:
+        elif kb < 250:
             return '#ef6548'
-        elif kb < 750:
+        elif kb < 500:
             return '#d7301f'
-        elif kb < 1000:
+        elif kb < 750:
             return '#990000'
         else:
             return '#000000'
