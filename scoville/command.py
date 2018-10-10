@@ -135,8 +135,8 @@ def proxy(url, port):
     URL should contain {z}, {x} and {y} replacements.
     """
 
-    from scoville.proxy import serve_http
-    serve_http(url, port)
+    from scoville.proxy import serve_http, Treemap
+    serve_http(url, port, Treemap())
 
 
 def read_urls(file_name, url_pattern):
@@ -232,6 +232,46 @@ def percentiles(tiles_file, url, percentiles, cache, nprocs, output_format):
 
     else:
         raise ValueError('Unknown output format %r' % (output_format,))
+
+
+@cli.command()
+@click.argument('url', required=1)
+@click.option('--port', default=8000, help='Port to serve tiles on.')
+def heatmap(url, port):
+    """
+    Serves a heatmap of tile sizes on localhost:PORT.
+
+    URL should contain {z}, {x} and {y} replacements.
+    """
+
+    from scoville.proxy import serve_http, Heatmap
+
+    def colour_map(size):
+        kb = size / 1024
+
+        if kb < 6:
+            return '#ffffff'
+        elif kb < 12:
+            return '#fff7ec'
+        elif kb < 25:
+            return '#fee8c8'
+        elif kb < 50:
+            return '#fdd49e'
+        elif kb < 75:
+            return '#fdbb84'
+        elif kb < 125:
+            return '#fc8d59'
+        elif kb < 250:
+            return '#ef6548'
+        elif kb < 500:
+            return '#d7301f'
+        elif kb < 750:
+            return '#990000'
+        else:
+            return '#000000'
+
+    heatmap = Heatmap(3, 16, colour_map)
+    serve_http(url, port, heatmap)
 
 
 def scoville_main():
