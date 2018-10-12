@@ -30,10 +30,11 @@ setup(
     zip_safe=False,
     install_requires=[
         'click',
-        'PIL',
         'requests',
         'requests_futures',
         'squarify',
+        'msgpack',
+        'Pillow',
     ],
     entry_points=dict(
         console_scripts=[

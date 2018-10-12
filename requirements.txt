@@ -1,2 +1,7 @@
 click
 enum34
+requests
+requests_futures
+squarify
+msgpack
+Pillow

@@ -95,8 +95,21 @@ def info(mvt_file, kind, d3_json):
     treemap visualisation.
     """
 
-    with open(mvt_file, 'r') as fh:
-        tile = Tile(fh.read())
+    if mvt_file.startswith('http://') or \
+       mvt_file.startswith('https://'):
+        import requests
+
+        res = requests.get(mvt_file)
+        if res.status_code == 200:
+            tile = Tile(res.content)
+        else:
+            click.echo("Failed to fetch tile, status was %r" %
+                       (res.status_code,))
+            return
+
+    else:
+        with open(mvt_file, 'r') as fh:
+            tile = Tile(fh.read())
 
     sizes = {}
     for layer in tile:
@@ -272,6 +285,33 @@ def heatmap(url, port):
 
     heatmap = Heatmap(3, 16, colour_map)
     serve_http(url, port, heatmap)
+
+
+@cli.command()
+@click.argument('tiles_file', required=1)
+@click.argument('url', required=1)
+@click.option('--cache/--no-cache', default=False, help='Use a cache for '
+              'tiles. Can speed up multiple runs considerably.')
+@click.option('--nprocs', '-j', default=1, type=int, help='Number of '
+              'processes to use to download and do tile size aggregation.')
+@click.option('--num-outliers-per-layer', '-n', type=int, default=3,
+              help='Number of outliers for each layer to report on.')
+def outliers(tiles_file, url, cache, nprocs, num_outliers_per_layer):
+    """
+    From the distribution of tile coordinates given in TILES_FILE and fetched
+    from the URL pattern, pull out some of the outlier tiles which have the
+    largest sizes in each layer.
+    """
+
+    from scoville.percentiles import calculate_outliers
+
+    tiles = read_urls(tiles_file, url)
+    result = calculate_outliers(tiles, num_outliers_per_layer, cache, nprocs)
+
+    for name in sorted(result.keys()):
+        click.secho("Layer %r" % name, fg='green', bold=True)
+        for size, url in sorted(result[name]):
+            click.echo("%8d %s" % (size, url))
 
 
 def scoville_main():

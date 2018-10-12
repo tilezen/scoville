@@ -6,6 +6,7 @@ Current scoville commands:
 * `proxy`: Serves a treemap visualisation of tiles on a local HTTP server.
 * `percentiles`: Calculate the percentile tile sizes for a set of MVT tiles.
 * `heatmap`: Serves a heatmap visualisation of tile sizes on a local HTTP server.
+* `outliers`: Calculates the tiles with the largest per-layer sizes.
 
 ### Info command ###
 
@@ -125,6 +126,40 @@ This will run a server on [localhost:8000](http://localhost:8000) by default (us
 
 ![Screenshot of the heatmap server](doc/heatmap_screenshot.png)
 
+
+### Outliers command ###
+
+This calculates the largest tiles on a per-layer basis. For example, when run on a list of 1,000 frequently accessed tiles:
+
+```
+scoville outliers -j 4 --cache top-1000-tiles.txt 'https://tile.nextzen.org/tilezen/vector/v1/512/all/{z}/{x}/{y}.mvt?api_key=YOUR_API_KEY'
+```
+
+It gives something like the following:
+
+```
+Layer 'boundaries'
+    67474 https://tile.nextzen.org/tilezen/vector/v1/512/all/5/17/11.mvt?api_key=YOUR_API_KEY
+    68731 https://tile.nextzen.org/tilezen/vector/v1/512/all/0/0/0.mvt?api_key=YOUR_API_KEY
+    92467 https://tile.nextzen.org/tilezen/vector/v1/512/all/4/8/5.mvt?api_key=YOUR_API_KEY
+Layer 'buildings'
+   359667 https://tile.nextzen.org/tilezen/vector/v1/512/all/13/3035/4647.mvt?api_key=YOUR_API_KEY
+   372929 https://tile.nextzen.org/tilezen/vector/v1/512/all/13/3034/4647.mvt?api_key=YOUR_API_KEY
+   408946 https://tile.nextzen.org/tilezen/vector/v1/512/all/13/3033/4647.mvt?api_key=YOUR_API_KEY
+Layer 'earth'
+    94603 https://tile.nextzen.org/tilezen/vector/v1/512/all/7/62/44.mvt?api_key=YOUR_API_KEY
+    98898 https://tile.nextzen.org/tilezen/vector/v1/512/all/7/68/40.mvt?api_key=YOUR_API_KEY
+   110378 https://tile.nextzen.org/tilezen/vector/v1/512/all/0/0/0.mvt?api_key=YOUR_API_KEY
+Layer 'landuse'
+   191312 https://tile.nextzen.org/tilezen/vector/v1/512/all/9/263/170.mvt?api_key=YOUR_API_KEY
+   196733 https://tile.nextzen.org/tilezen/vector/v1/512/all/9/262/170.mvt?api_key=YOUR_API_KEY
+   271852 https://tile.nextzen.org/tilezen/vector/v1/512/all/9/263/169.mvt?api_key=YOUR_API_KEY
+...
+```
+
+For each layer, it calculates the tiles which use the most bytes for that layer. The top tile URLs are listed, grouped by layer, with each line showing the size of the layer and the URL. Further investigation can be done by pasting the tile URL into the `info` command.
+
+By default, it outputs the top 3 tiles, but this can be changed with the `-n` command line option. Runs can be parallelised by using the `-j` option, and cached using the `--cache` option (useful if this is not a one-off, and you might run several commands against the same tile set).
 
 ## Install on Ubuntu:
 
