@@ -126,9 +126,6 @@ _WIRE_TYPES = {
 
 class Decoder(object):
     def __init__(self, buf):
-        # if not isinstance(buf, memoryview):
-        #     self.buf = memoryview(buf)
-        # else:
         self.buf = buf
         self.pos = 0
         self.end = len(buf)
