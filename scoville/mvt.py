@@ -166,7 +166,7 @@ class Feature(object):
         # in lists at the layer level (which were passed into the Feature
         # constructor).
         properties = {}
-        for i in xrange(0, len(self._properties), 2):
+        for i in range(0, len(self._properties), 2):
             k = self.keys[self._properties[i]]
             v = self.values[self._properties[i+1]]
             properties[k] = _decode_value(v)

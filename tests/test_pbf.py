@@ -6,7 +6,7 @@ class PBFTest(unittest.TestCase):
     def test_int32(self):
         from scoville.pbf import Message, _VarInt
 
-        msg = '\x08\x96\x01'
+        msg = b'\x08\x96\x01'
         p = Message(msg)
 
         field = p.next()
@@ -19,7 +19,7 @@ class PBFTest(unittest.TestCase):
     def test_string(self):
         from scoville.pbf import Message, _LengthDelimited
 
-        msg = '\x12\x07\x74\x65\x73\x74\x69\x6e\x67'
+        msg = b'\x12\x07\x74\x65\x73\x74\x69\x6e\x67'
         p = Message(msg)
 
         field = p.next()
@@ -32,7 +32,7 @@ class PBFTest(unittest.TestCase):
     def test_packed_int(self):
         from scoville.pbf import Message, _LengthDelimited, WireType
 
-        msg = '\x22\x06\x03\x8e\x02\x9e\xa7\x05'
+        msg = b'\x22\x06\x03\x8e\x02\x9e\xa7\x05'
         p = Message(msg)
 
         field = p.next()
@@ -46,7 +46,7 @@ class PBFTest(unittest.TestCase):
     def test_zigzag_int(self):
         from scoville.pbf import Message
 
-        msg = '\x08\x03'
+        msg = b'\x08\x03'
         p = Message(msg)
 
         fields = list(p)
@@ -84,7 +84,7 @@ class PBFTest(unittest.TestCase):
         from scoville.pbf import Message, _Bits64
         from math import pi
 
-        msg = '\x09\x18\x2d\x44\x54\xfb\x21\x09\x40'
+        msg = b'\x09\x18\x2d\x44\x54\xfb\x21\x09\x40'
         p = Message(msg)
 
         field = p.next()
@@ -98,7 +98,7 @@ class PBFTest(unittest.TestCase):
         from scoville.pbf import Message, _Bits32
         from math import pi
 
-        msg = '\x0d\xdb\x0f\x49\x40'
+        msg = b'\x0d\xdb\x0f\x49\x40'
         p = Message(msg)
 
         field = p.next()
