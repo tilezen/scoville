@@ -35,6 +35,7 @@ setup(
         'squarify',
         'msgpack',
         'Pillow',
+	'enum34'
     ],
     entry_points=dict(
         console_scripts=[
