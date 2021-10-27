@@ -172,14 +172,14 @@ class Handler(http.server.BaseHTTPRequestHandler):
     def send_template(self, template_name):
         from jinja2 import Template
 
-        template = Template(pkg_resources.resource_string(
-            __name__, "proxy/" + template_name))
+        resource = pkg_resources.resource_string(__name__, "proxy/" + template_name)
+        template = Template(resource.decode())
 
         data = template.render(port=self.server.server_port)
 
         self.send_response(200)
         self.end_headers()
-        self.wfile.write(data)
+        self.wfile.write(bytes(data, encoding='utf8'))
         return
 
 

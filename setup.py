@@ -34,8 +34,7 @@ setup(
         'requests_futures',
         'squarify',
         'msgpack',
-        'Pillow',
-	'enum34'
+        'Pillow'
     ],
     entry_points=dict(
         console_scripts=[

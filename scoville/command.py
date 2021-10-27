@@ -108,7 +108,7 @@ def info(mvt_file, kind, d3_json):
             return
 
     else:
-        with open(mvt_file, 'r') as fh:
+        with open(mvt_file, 'rb') as fh:
             tile = Tile(fh.read())
 
     sizes = {}
