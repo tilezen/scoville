@@ -256,8 +256,8 @@ class TileIterator(object):
     def __init__(self, data):
         self.msg = Message(data)
 
-    def next(self):
-        field = self.msg.next()
+    def __next__(self):
+        field = next(self.msg)
 
         if field.tag != Tile.Tags.LAYER:
             raise ValueError(

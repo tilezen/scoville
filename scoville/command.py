@@ -28,8 +28,8 @@ _NAME_ALTERNATES = (
 
 def _is_name(k):
     # return true if the key looks like a name
-    return k == u'name' or \
-        k.startswith(u'name:') or \
+    return k == 'name' or \
+        k.startswith('name:') or \
         k in _NAME_ALTERNATES
 
 
@@ -42,7 +42,7 @@ def summarise(features, kind_key):
         props_size = feature.properties_size
         geom_cmds_size = feature.geom_cmds_size
         metadata_size = feature.size - (props_size + geom_cmds_size)
-        names_count = sum(1 for k in props.keys() if _is_name(k))
+        names_count = sum(1 for k in list(props.keys()) if _is_name(k))
 
         if kind not in sizes:
             sizes[kind] = dict(count=0, properties=0, geom_cmds=0, metadata=0,
@@ -59,7 +59,7 @@ def summarise(features, kind_key):
 
 def d3_output(node, name=''):
     children = []
-    for k, v in node.iteritems():
+    for k, v in list(node.items()):
         if isinstance(v, dict):
             subtree = d3_output(v, name=k)
             if subtree:
@@ -132,7 +132,7 @@ def info(mvt_file, kind, d3_json):
         sizes[layer.name] = layer_sizes
 
     if d3_json:
-        print(json.dumps(d3_output(sizes, name=mvt_file)))
+        print((json.dumps(d3_output(sizes, name=mvt_file))))
     else:
         print_tree(sizes)
 
@@ -156,7 +156,7 @@ def read_urls(file_name, url_pattern):
     with open(file_name, 'r') as fh:
         for line in fh:
             zxy = line.split(' ', 1)[0]
-            z, x, y = map(int, zxy.split('/', 2))
+            z, x, y = list(map(int, zxy.split('/', 2)))
 
             u = url_pattern \
                 .replace('{z}', str(z)) \
