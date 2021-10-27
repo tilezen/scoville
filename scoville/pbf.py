@@ -183,5 +183,3 @@ class Message(object):
         field.size = self.decoder.pos - start_pos
 
         return field
-
-    __next__ = next

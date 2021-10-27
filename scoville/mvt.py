@@ -266,8 +266,6 @@ class TileIterator(object):
 
         return Layer(field)
 
-    __next__ = next
-
 
 class Tile(object):
     r"""

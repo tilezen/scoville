@@ -9,7 +9,7 @@ class PBFTest(unittest.TestCase):
         msg = b'\x08\x96\x01'
         p = Message(msg)
 
-        field = p.next()
+        field = next(p)
         self.assertEqual(field.tag, 1)
         self.assertIsInstance(field, _VarInt)
 
@@ -22,7 +22,7 @@ class PBFTest(unittest.TestCase):
         msg = b'\x12\x07\x74\x65\x73\x74\x69\x6e\x67'
         p = Message(msg)
 
-        field = p.next()
+        field = next(p)
         self.assertEqual(field.tag, 2)
         self.assertIsInstance(field, _LengthDelimited)
 
@@ -35,7 +35,7 @@ class PBFTest(unittest.TestCase):
         msg = b'\x22\x06\x03\x8e\x02\x9e\xa7\x05'
         p = Message(msg)
 
-        field = p.next()
+        field = next(p)
         self.assertEqual(field.tag, 4)
         self.assertIsInstance(field, _LengthDelimited)
 
@@ -87,7 +87,7 @@ class PBFTest(unittest.TestCase):
         msg = b'\x09\x18\x2d\x44\x54\xfb\x21\x09\x40'
         p = Message(msg)
 
-        field = p.next()
+        field = next(p)
         self.assertEqual(field.tag, 1)
         self.assertIsInstance(field, _Bits64)
 
@@ -101,7 +101,7 @@ class PBFTest(unittest.TestCase):
         msg = b'\x0d\xdb\x0f\x49\x40'
         p = Message(msg)
 
-        field = p.next()
+        field = next(p)
         self.assertEqual(field.tag, 1)
         self.assertIsInstance(field, _Bits32)
 
