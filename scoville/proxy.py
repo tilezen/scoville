@@ -171,12 +171,11 @@ class Handler(http.server.BaseHTTPRequestHandler):
                              .replace("{x}", str(x)) \
                              .replace("{y}", str(y))
 
-            futures[name] = (session.get(url), coord)
+            futures[name] = session.get(url)
 
         tiles = {}
         for name, fut in futures.items():
-            res = fut[0].result()
-            coord = fut[1]
+            res = fut.result()
             if res.status_code != requests.codes.ok:
                 self.send_response(res.status_code)
                 return
