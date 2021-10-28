@@ -289,8 +289,9 @@ class Tile(object):
     class Tags(IntEnum):
         LAYER = 3
 
-    def __init__(self, data):
+    def __init__(self, data, name=""):
         self.data = data
+        self.name = name
 
     def __iter__(self):
         return TileIterator(self.data)
