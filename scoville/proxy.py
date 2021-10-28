@@ -37,7 +37,7 @@ class Treemap(object):
         draw = ImageDraw.Draw(im)
         font = ImageFont.load_default()
 
-        for rect, name in reversed(zip(rects, names)):
+        for rect, name in reversed(list(zip(rects, names))):
             # hack to get 'water' => hue(240) = blue
             hue = (name.__hash__() + 192) % 360
             colour = 'hsl(%d, 100%%, 70%%)' % (hue,)
