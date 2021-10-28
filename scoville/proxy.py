@@ -56,6 +56,13 @@ class Treemap(object):
                             centre[1] - text_h / 2)
                 draw.text(top_left, name, fill='black', font=font)
 
+        if tile.name:
+            text_w, text_h = font.getsize(tile.name)
+            center = (width / 2, height / 2)
+            top_left_up_a_couple = (center[0] - text_w / 2,
+                        2 * text_h)
+            draw.text(top_left_up_a_couple, tile.name, fill='black', font=font)
+
         del draw
         return im
 
@@ -81,7 +88,7 @@ class Heatmap(object):
         return tiles
 
     def render(self, tiles):
-        from PIL import Image, ImageDraw
+        from PIL import Image, ImageDraw, ImageFont
 
         max_coord = max(tiles.keys())
         assert max_coord[0] == max_coord[1]
@@ -96,14 +103,28 @@ class Heatmap(object):
         scale = width / ntiles
         assert width == scale * ntiles
 
+        parent_coord_name = ""
         for x in range(0, ntiles):
             for y in range(0, ntiles):
-                size = len(tiles[(x, y)].data)
+                tile = tiles[(x, y)]
+                size = len(tile.data)
                 colour = self.colour_map(size)
+
+                if not parent_coord_name:
+                    parent_coord_name = tile.name
 
                 draw.rectangle(
                     [x * scale, y * scale, (x+1) * scale, (y+1) * scale],
                     fill=colour)
+
+        if parent_coord_name:
+            font = ImageFont.load_default()
+            text_w, text_h = font.getsize(parent_coord_name)
+            center = (width / 2, height / 2)
+            top_left = (center[0] - text_w / 2, center[1] - text_h / 2)
+            draw.text(top_left, parent_coord_name, fill='black', font=font)
+
+        draw.rectangle([0, 0, width, height], outline='black', fill=None)
 
         del draw
         return im
@@ -139,6 +160,8 @@ class Handler(http.server.BaseHTTPRequestHandler):
 
         session = FuturesSession()
 
+        parent_coord = (z, x, y)
+
         futures = {}
         tile_map = self.server.renderer.tiles_for(z, x, y)
         for name, coord in tile_map.items():
@@ -148,17 +171,17 @@ class Handler(http.server.BaseHTTPRequestHandler):
                              .replace("{x}", str(x)) \
                              .replace("{y}", str(y))
 
-            futures[name] = session.get(url)
+            futures[name] = (session.get(url), coord)
 
         tiles = {}
         for name, fut in futures.items():
-            res = fut.result()
-
+            res = fut[0].result()
+            coord = fut[1]
             if res.status_code != requests.codes.ok:
                 self.send_response(res.status_code)
                 return
 
-            tiles[name] = Tile(res.content)
+            tiles[name] = Tile(res.content, "%s/%s/%s" % (parent_coord[0], parent_coord[1], parent_coord[2]))
 
         im = self.server.renderer.render(tiles)
 
