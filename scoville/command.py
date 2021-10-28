@@ -42,7 +42,7 @@ def summarise(features, kind_key):
         props_size = feature.properties_size
         geom_cmds_size = feature.geom_cmds_size
         metadata_size = feature.size - (props_size + geom_cmds_size)
-        names_count = sum(1 for k in list(props.keys()) if _is_name(k))
+        names_count = sum(1 for k in props.keys() if _is_name(k))
 
         if kind not in sizes:
             sizes[kind] = dict(count=0, properties=0, geom_cmds=0, metadata=0,
@@ -59,7 +59,7 @@ def summarise(features, kind_key):
 
 def d3_output(node, name=''):
     children = []
-    for k, v in list(node.items()):
+    for k, v in node.items():
         if isinstance(v, dict):
             subtree = d3_output(v, name=k)
             if subtree:
@@ -132,7 +132,7 @@ def info(mvt_file, kind, d3_json):
         sizes[layer.name] = layer_sizes
 
     if d3_json:
-        print((json.dumps(d3_output(sizes, name=mvt_file))))
+        print(json.dumps(d3_output(sizes, name=mvt_file)))
     else:
         print_tree(sizes)
 

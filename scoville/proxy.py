@@ -37,7 +37,7 @@ class Treemap(object):
         draw = ImageDraw.Draw(im)
         font = ImageFont.load_default()
 
-        for rect, name in reversed(list(zip(rects, names))):
+        for rect, name in reversed(zip(rects, names)):
             # hack to get 'water' => hue(240) = blue
             hue = (name.__hash__() + 192) % 360
             colour = 'hsl(%d, 100%%, 70%%)' % (hue,)
@@ -141,7 +141,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
 
         futures = {}
         tile_map = self.server.renderer.tiles_for(z, x, y)
-        for name, coord in list(tile_map.items()):
+        for name, coord in tile_map.items():
             z, x, y = coord
             url = self.server.url_pattern \
                              .replace("{z}", str(z)) \
@@ -151,7 +151,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
             futures[name] = session.get(url)
 
         tiles = {}
-        for name, fut in list(futures.items()):
+        for name, fut in futures.items():
             res = fut.result()
 
             if res.status_code != requests.codes.ok:
@@ -192,6 +192,6 @@ class ThreadedHTTPServer(socketserver.ThreadingMixIn, http.server.HTTPServer):
 
 def serve_http(url, port, renderer):
     httpd = ThreadedHTTPServer(("", port), Handler, url, renderer)
-    print(("Listening on port %d. Point your browser towards "
-          "http://localhost:%d/" % (port, port)))
+    print("Listening on port %d. Point your browser towards "
+          "http://localhost:%d/" % (port, port))
     httpd.serve_forever()

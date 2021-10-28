@@ -96,7 +96,7 @@ class Aggregator(object):
     def merge_decode(self, data):
         from msgpack import unpackb
         results = unpackb(data)
-        for k, v in list(results.items()):
+        for k, v in results.items():
             self.results[k].extend(v)
 
 
@@ -134,7 +134,7 @@ class LargestN(object):
     def merge_decode(self, data):
         from msgpack import unpackb
         results = unpackb(data)
-        for name, values in list(results.items()):
+        for name, values in results.items():
             for size, url in values:
                 self._insert(name, size, url)
 
@@ -243,7 +243,7 @@ def calculate_percentiles(tile_urls, percentiles, cache, nprocs):
         results = sequential(tile_urls, factory_fn)
 
     pct = {}
-    for label, values in list(results.items()):
+    for label, values in results.items():
         values.sort()
         pcts = []
         for p in percentiles:
