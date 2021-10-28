@@ -69,7 +69,7 @@ class _LengthDelimited(_Field):
         self.buf = decoder.get_bytes(self.num_bytes)
 
     def as_string(self):
-        return self.buf.tobytes().decode('utf-8')
+        return self.buf.decode('utf-8')
 
     def as_memoryview(self):
         return self.buf
@@ -126,10 +126,7 @@ _WIRE_TYPES = {
 
 class Decoder(object):
     def __init__(self, buf):
-        if not isinstance(buf, memoryview):
-            self.buf = memoryview(buf)
-        else:
-            self.buf = buf
+        self.buf = buf
         self.pos = 0
         self.end = len(buf)
 
@@ -158,7 +155,7 @@ class Decoder(object):
         if self.pos == self.end:
             raise EOFError("Unexpected end of PBF data at byte %d" % self.pos)
 
-        v = ord(self.buf[self.pos])
+        v = self.buf[self.pos]
         self.pos += 1
 
         return v
@@ -171,7 +168,7 @@ class Message(object):
     def __iter__(self):
         return self
 
-    def next(self):
+    def __next__(self):
         if self.decoder.pos >= self.decoder.end:
             raise StopIteration()
 
@@ -186,5 +183,3 @@ class Message(object):
         field.size = self.decoder.pos - start_pos
 
         return field
-
-    __next__ = next

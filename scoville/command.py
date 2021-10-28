@@ -28,8 +28,8 @@ _NAME_ALTERNATES = (
 
 def _is_name(k):
     # return true if the key looks like a name
-    return k == u'name' or \
-        k.startswith(u'name:') or \
+    return k == 'name' or \
+        k.startswith('name:') or \
         k in _NAME_ALTERNATES
 
 
@@ -59,7 +59,7 @@ def summarise(features, kind_key):
 
 def d3_output(node, name=''):
     children = []
-    for k, v in node.iteritems():
+    for k, v in node.items():
         if isinstance(v, dict):
             subtree = d3_output(v, name=k)
             if subtree:
@@ -108,7 +108,7 @@ def info(mvt_file, kind, d3_json):
             return
 
     else:
-        with open(mvt_file, 'r') as fh:
+        with open(mvt_file, 'rb') as fh:
             tile = Tile(fh.read())
 
     sizes = {}
@@ -156,7 +156,7 @@ def read_urls(file_name, url_pattern):
     with open(file_name, 'r') as fh:
         for line in fh:
             zxy = line.split(' ', 1)[0]
-            z, x, y = map(int, zxy.split('/', 2))
+            z, x, y = list(map(int, zxy.split('/', 2)))
 
             u = url_pattern \
                 .replace('{z}', str(z)) \

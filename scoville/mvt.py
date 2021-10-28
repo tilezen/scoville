@@ -166,7 +166,7 @@ class Feature(object):
         # in lists at the layer level (which were passed into the Feature
         # constructor).
         properties = {}
-        for i in xrange(0, len(self._properties), 2):
+        for i in range(0, len(self._properties), 2):
             k = self.keys[self._properties[i]]
             v = self.values[self._properties[i+1]]
             properties[k] = _decode_value(v)
@@ -256,8 +256,8 @@ class TileIterator(object):
     def __init__(self, data):
         self.msg = Message(data)
 
-    def next(self):
-        field = self.msg.next()
+    def __next__(self):
+        field = next(self.msg)
 
         if field.tag != Tile.Tags.LAYER:
             raise ValueError(
@@ -265,8 +265,6 @@ class TileIterator(object):
                 % (Tile.Tags.LAYER, field.tag))
 
         return Layer(field)
-
-    __next__ = next
 
 
 class Tile(object):

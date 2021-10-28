@@ -30,8 +30,8 @@ def _fetch_cache(url):
     # we use the non-query part to store on disk. (tile won't depend on API
     # key, right?) partly because the API key can be very long and overflow
     # the max 255 chars for a filename when base64 encoded.
-    no_query = url.split('?', 1)[0]
-    encoded = urlsafe_b64encode(no_query)
+    no_query = url.split('?', 1)[0].encode()
+    encoded = urlsafe_b64encode(no_query).decode()
     assert len(encoded) < 256
 
     # we use a 2-level hash-based fanout to avoid having so many inodes in
@@ -42,14 +42,14 @@ def _fetch_cache(url):
 
     data = None
     if isfile(file_name):
-        with open(file_name, 'r') as fh:
+        with open(file_name, 'rb') as fh:
             data = fh.read()
 
     else:
         data = _fetch_http(url)
         if not isdir(dir_name):
             makedirs(dir_name)
-        with open(file_name, 'w') as fh:
+        with open(file_name, 'wb') as fh:
             fh.write(data)
 
     return data
@@ -96,7 +96,7 @@ class Aggregator(object):
     def merge_decode(self, data):
         from msgpack import unpackb
         results = unpackb(data)
-        for k, v in results.iteritems():
+        for k, v in results.items():
             self.results[k].extend(v)
 
 
@@ -134,7 +134,7 @@ class LargestN(object):
     def merge_decode(self, data):
         from msgpack import unpackb
         results = unpackb(data)
-        for name, values in results.iteritems():
+        for name, values in results.items():
             for size, url in values:
                 self._insert(name, size, url)
 
@@ -158,7 +158,7 @@ def worker(input_queue, output_queue, factory_fn):
         if isinstance(obj, Sentinel):
             break
 
-        assert(isinstance(obj, (str, unicode)))
+        assert(isinstance(obj, str))
         agg.add(obj)
         input_queue.task_done()
 
@@ -180,7 +180,7 @@ def parallel(tile_urls, factory_fn, nprocs):
     output_queue = Queue(nprocs)
 
     workers = []
-    for i in xrange(0, nprocs):
+    for i in range(0, nprocs):
         w = Process(target=worker, args=(input_queue, output_queue, factory_fn))
         w.start()
         workers.append(w)
@@ -192,13 +192,13 @@ def parallel(tile_urls, factory_fn, nprocs):
     # enqueuing the Sentinel isn't going to "jump the queue" in front of a task
     # and mean we don't get the full result set back.
     input_queue.join()
-    for i in xrange(0, nprocs):
+    for i in range(0, nprocs):
         input_queue.put(Sentinel())
 
     # after we've queued the Sentinels, each worker should output an aggregated
     # result on the output queue.
     agg = factory_fn()
-    for i in xrange(0, nprocs):
+    for i in range(0, nprocs):
         agg.merge_decode(output_queue.get())
 
     # and the worker should have exited, so we can clean up the processes.
@@ -243,7 +243,7 @@ def calculate_percentiles(tile_urls, percentiles, cache, nprocs):
         results = sequential(tile_urls, factory_fn)
 
     pct = {}
-    for label, values in results.iteritems():
+    for label, values in results.items():
         values.sort()
         pcts = []
         for p in percentiles:

@@ -1,5 +1,4 @@
 click
-enum34
 requests
 requests_futures
 squarify

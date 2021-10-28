@@ -37,7 +37,7 @@ class Treemap(object):
         draw = ImageDraw.Draw(im)
         font = ImageFont.load_default()
 
-        for rect, name in reversed(zip(rects, names)):
+        for rect, name in reversed(list(zip(rects, names))):
             # hack to get 'water' => hue(240) = blue
             hue = (name.__hash__() + 192) % 360
             colour = 'hsl(%d, 100%%, 70%%)' % (hue,)
@@ -75,8 +75,8 @@ class Heatmap(object):
         dz = sub_z - z
         width = 1 << dz
         tiles = {}
-        for dx in xrange(0, width):
-            for dy in xrange(0, width):
+        for dx in range(0, width):
+            for dy in range(0, width):
                 tiles[(dx, dy)] = (sub_z, (x << dz) + dx, (y << dz) + dy)
         return tiles
 
@@ -96,8 +96,8 @@ class Heatmap(object):
         scale = width / ntiles
         assert width == scale * ntiles
 
-        for x in xrange(0, ntiles):
-            for y in xrange(0, ntiles):
+        for x in range(0, ntiles):
+            for y in range(0, ntiles):
                 size = len(tiles[(x, y)].data)
                 colour = self.colour_map(size)
 
@@ -121,7 +121,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
 
         m = TILE_PATTERN.match(self.path)
         if m:
-            z, x, y = map(int, m.groups())
+            z, x, y = list(map(int, m.groups()))
 
             if 0 <= z < 16 and \
                0 <= x < (1 << z) and \
@@ -141,7 +141,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
 
         futures = {}
         tile_map = self.server.renderer.tiles_for(z, x, y)
-        for name, coord in tile_map.iteritems():
+        for name, coord in tile_map.items():
             z, x, y = coord
             url = self.server.url_pattern \
                              .replace("{z}", str(z)) \
@@ -151,7 +151,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
             futures[name] = session.get(url)
 
         tiles = {}
-        for name, fut in futures.iteritems():
+        for name, fut in futures.items():
             res = fut.result()
 
             if res.status_code != requests.codes.ok:
@@ -172,14 +172,14 @@ class Handler(http.server.BaseHTTPRequestHandler):
     def send_template(self, template_name):
         from jinja2 import Template
 
-        template = Template(pkg_resources.resource_string(
-            __name__, "proxy/" + template_name))
+        resource = pkg_resources.resource_string(__name__, "proxy/" + template_name)
+        template = Template(resource.decode())
 
         data = template.render(port=self.server.server_port)
 
         self.send_response(200)
         self.end_headers()
-        self.wfile.write(data)
+        self.wfile.write(bytes(data, encoding='utf8'))
         return
 
 
