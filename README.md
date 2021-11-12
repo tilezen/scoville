@@ -55,6 +55,16 @@ python -m SimpleHTTPServer
 
 And visit [localhost:8000](http://localhost:8000) in a browser.
 
+### Compare command ###
+
+Use to compare MVT contents from two different sources for a given list of tiles.  Output is a sequence of calls to the Info command above.
+
+Run it like this, basically `compare tile_file url_template_1 url_template_2`
+
+```
+scoville compare /path/to/tile/file.txt "https://tile.nextzen.org/tilezen/vector/v1/512/all/{z}/{x}/{y}.mvt?api_key=YOUR_API_KEY" "https://tile.nextzen.org/tilezen/vector/v1/512/something_different/{z}/{x}/{y}.mvt?api_key=YOUR_API_KEY"
+```
+
 ### Proxy command ###
 
 The proxy command will run a local tile server which, given an upstream MVT tile server, returns a treemap visualisation of each MVT tile. This can be useful to get a broad understanding of which layers take up most space, and to spot any zoom levels or tiles with unexpected distributions of space.

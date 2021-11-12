@@ -94,9 +94,12 @@ def info(mvt_file, kind, d3_json):
     Alternatively, set --d3-json to dump a file suitable for using in D3's
     treemap visualisation.
     """
+    _info(mvt_file, kind, d3_json)
 
+
+def _info(mvt_file, kind, d3_json):
     if mvt_file.startswith('http://') or \
-       mvt_file.startswith('https://'):
+            mvt_file.startswith('https://'):
         import requests
 
         res = requests.get(mvt_file)
@@ -138,6 +141,34 @@ def info(mvt_file, kind, d3_json):
 
 
 @cli.command()
+@click.argument('tiles_file', required=1)
+@click.argument('url1', required=1)
+@click.argument('url2', required=1)
+@click.option('--kind', help='Primary property key to segment features '
+                             'within a layer. By default, features will not be segmented.')
+def compare(tiles_file, url1, url2, kind):
+    """
+    Prints the info for each tile in the tiles_file from two different sources to enable comparison.
+    See the info command for details on --kind
+    """
+
+    tiles = read_tiles(tiles_file)
+    tile_urls1 = read_urls(tiles_file, url1)
+    tile_urls2 = read_urls(tiles_file, url2)
+    for tile, url1, url2 in zip(tiles, tile_urls1, tile_urls2):
+        print("===BEGIN===>%s" % tile)
+
+        print("url1: --->%s" % url1)
+        _info(url1, kind, None)
+        print()
+
+        print("url2: --->%s" % url2)
+        _info(url1, kind, None)
+
+        print("<===END===%s\n\n" % tile)
+
+
+@cli.command()
 @click.argument('url', required=1)
 @click.option('--port', default=8000, help='Port to serve tiles on.')
 def proxy(url, port):
@@ -164,6 +195,12 @@ def read_urls(file_name, url_pattern):
                 .replace('{y}', str(y))
 
             yield u
+
+
+def read_tiles(file_name):
+    with open(file_name, 'r') as fh:
+        for line in fh:
+            yield line.strip()
 
 
 def _percentiles_output_text(percentiles, result):
