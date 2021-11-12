@@ -12,7 +12,8 @@ def _fetch_http(url):
 
     # TODO: retry? better error handling!
     if res.status_code != requests.codes.ok:
-        raise IOError("Got tile response %d" % (res.status_code,))
+        print("Got tile response %d for %s" % (res.status_code, url))
+        return None
 
     return res.content
 
@@ -47,10 +48,11 @@ def _fetch_cache(url):
 
     else:
         data = _fetch_http(url)
-        if not isdir(dir_name):
-            makedirs(dir_name)
-        with open(file_name, 'wb') as fh:
-            fh.write(data)
+        if data:
+            if not isdir(dir_name):
+                makedirs(dir_name)
+            with open(file_name, 'wb') as fh:
+                fh.write(data)
 
     return data
 
@@ -123,6 +125,8 @@ class LargestN(object):
 
     def add(self, tile_url):
         data = self.fetch_fn(tile_url)
+        if not data:
+            return
         tile = Tile(data)
         for layer in tile:
             self._insert(layer.name, layer.size, tile_url)
