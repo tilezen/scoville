@@ -12,7 +12,8 @@ def _fetch_http(url):
 
     # TODO: retry? better error handling!
     if res.status_code != requests.codes.ok:
-        raise IOError("Got tile response %d" % (res.status_code,))
+        print("Got tile response %d for %s" % (res.status_code, url))
+        return None
 
     return res.content
 
@@ -47,10 +48,11 @@ def _fetch_cache(url):
 
     else:
         data = _fetch_http(url)
-        if not isdir(dir_name):
-            makedirs(dir_name)
-        with open(file_name, 'wb') as fh:
-            fh.write(data)
+        if data:
+            if not isdir(dir_name):
+                makedirs(dir_name)
+            with open(file_name, 'wb') as fh:
+                fh.write(data)
 
     return data
 
@@ -100,6 +102,14 @@ class Aggregator(object):
             self.results[k].extend(v)
 
 
+class FactoryFunctionHolder(object):
+    def __init__(self, factory_fn):
+        self.factory_fn = factory_fn
+
+    def create(self):
+        return self.factory_fn()
+
+
 class LargestN(object):
     """
     Keeps a list of the largest N tiles for each layer.
@@ -113,9 +123,9 @@ class LargestN(object):
 
         self.results = defaultdict(list)
 
-    def _insert(self, name, size, url):
+    def _insert(self, name, size, features_size, properties_size, url):
         largest = self.results.get(name, [])
-        largest.append((size, url))
+        largest.append((size, features_size, properties_size, url))
         if len(largest) > self.num:
             largest.sort(reverse=True)
             del largest[self.num:]
@@ -123,9 +133,11 @@ class LargestN(object):
 
     def add(self, tile_url):
         data = self.fetch_fn(tile_url)
+        if not data:
+            return
         tile = Tile(data)
         for layer in tile:
-            self._insert(layer.name, layer.size, tile_url)
+            self._insert(layer.name, layer.size, layer.features_size, layer.properties_size, tile_url)
 
     def encode(self):
         from msgpack import packb
@@ -135,8 +147,8 @@ class LargestN(object):
         from msgpack import unpackb
         results = unpackb(data)
         for name, values in results.items():
-            for size, url in values:
-                self._insert(name, size, url)
+            for size, features_size, properties_size, url in values:
+                self._insert(name, size, features_size, properties_size, url)
 
 
 # special object to tell worker threads to exit
@@ -144,14 +156,12 @@ class Sentinel(object):
     pass
 
 
-def worker(input_queue, output_queue, factory_fn):
+def worker(input_queue, output_queue, aggregator):
     """
     Worker for multi-processing. Reads tasks from a queue and feeds them into
     the Aggregator. When all tasks are done it reads a Sentinel and sends the
     aggregated result back on the output queue.
     """
-
-    agg = factory_fn()
 
     while True:
         obj = input_queue.get()
@@ -159,13 +169,13 @@ def worker(input_queue, output_queue, factory_fn):
             break
 
         assert(isinstance(obj, str))
-        agg.add(obj)
+        aggregator.add(obj)
         input_queue.task_done()
 
-    output_queue.put(agg.encode())
+    output_queue.put(aggregator.encode())
 
 
-def parallel(tile_urls, factory_fn, nprocs):
+def parallel(tile_urls, factory, nprocs):
     """
     Fetch percentile data in parallel, using nprocs processes.
 
@@ -181,7 +191,7 @@ def parallel(tile_urls, factory_fn, nprocs):
 
     workers = []
     for i in range(0, nprocs):
-        w = Process(target=worker, args=(input_queue, output_queue, factory_fn))
+        w = Process(target=worker, args=(input_queue, output_queue, factory.create()))
         w.start()
         workers.append(w)
 
@@ -197,7 +207,7 @@ def parallel(tile_urls, factory_fn, nprocs):
 
     # after we've queued the Sentinels, each worker should output an aggregated
     # result on the output queue.
-    agg = factory_fn()
+    agg = factory.create()
     for i in range(0, nprocs):
         agg.merge_decode(output_queue.get())
 
@@ -238,7 +248,7 @@ def calculate_percentiles(tile_urls, percentiles, cache, nprocs):
         return Aggregator(cache)
 
     if nprocs > 1:
-        results = parallel(tile_urls, factory_fn, nprocs)
+        results = parallel(tile_urls, FactoryFunctionHolder(factory_fn), nprocs)
     else:
         results = sequential(tile_urls, factory_fn)
 
@@ -273,7 +283,7 @@ def calculate_outliers(tile_urls, num_outliers, cache, nprocs):
         return LargestN(num_outliers, cache)
 
     if nprocs > 1:
-        results = parallel(tile_urls, factory_fn, nprocs)
+        results = parallel(tile_urls, FactoryFunctionHolder(factory_fn), nprocs)
     else:
         results = sequential(tile_urls, factory_fn)
 

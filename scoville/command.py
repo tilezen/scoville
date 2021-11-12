@@ -310,8 +310,8 @@ def outliers(tiles_file, url, cache, nprocs, num_outliers_per_layer):
 
     for name in sorted(result.keys()):
         click.secho("Layer %r" % name, fg='green', bold=True)
-        for size, url in sorted(result[name]):
-            click.echo("%8d %s" % (size, url))
+        for size, features_size, properties_size, url in sorted(result[name]):
+            click.echo("t:%8d f:%8d p:%8d %s" % (size, features_size, properties_size, url))
 
 
 def scoville_main():
