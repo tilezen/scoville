@@ -123,9 +123,9 @@ class LargestN(object):
 
         self.results = defaultdict(list)
 
-    def _insert(self, name, size, url):
+    def _insert(self, name, size, features_size, properties_size, url):
         largest = self.results.get(name, [])
-        largest.append((size, url))
+        largest.append((size, features_size, properties_size, url))
         if len(largest) > self.num:
             largest.sort(reverse=True)
             del largest[self.num:]
@@ -137,7 +137,7 @@ class LargestN(object):
             return
         tile = Tile(data)
         for layer in tile:
-            self._insert(layer.name, layer.size, tile_url)
+            self._insert(layer.name, layer.size, layer.features_size, layer.properties_size, tile_url)
 
     def encode(self):
         from msgpack import packb
@@ -147,8 +147,8 @@ class LargestN(object):
         from msgpack import unpackb
         results = unpackb(data)
         for name, values in results.items():
-            for size, url in values:
-                self._insert(name, size, url)
+            for size, features_size, properties_size, url in values:
+                self._insert(name, size, features_size, properties_size, url)
 
 
 # special object to tell worker threads to exit
