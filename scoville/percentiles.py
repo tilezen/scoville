@@ -102,6 +102,14 @@ class Aggregator(object):
             self.results[k].extend(v)
 
 
+class FactoryFunctionHolder(object):
+    def __init__(self, factory_fn):
+        self.factory_fn = factory_fn
+
+    def create(self):
+        return self.factory_fn()
+
+
 class LargestN(object):
     """
     Keeps a list of the largest N tiles for each layer.
@@ -148,14 +156,12 @@ class Sentinel(object):
     pass
 
 
-def worker(input_queue, output_queue, factory_fn):
+def worker(input_queue, output_queue, aggregator):
     """
     Worker for multi-processing. Reads tasks from a queue and feeds them into
     the Aggregator. When all tasks are done it reads a Sentinel and sends the
     aggregated result back on the output queue.
     """
-
-    agg = factory_fn()
 
     while True:
         obj = input_queue.get()
@@ -163,13 +169,13 @@ def worker(input_queue, output_queue, factory_fn):
             break
 
         assert(isinstance(obj, str))
-        agg.add(obj)
+        aggregator.add(obj)
         input_queue.task_done()
 
-    output_queue.put(agg.encode())
+    output_queue.put(aggregator.encode())
 
 
-def parallel(tile_urls, factory_fn, nprocs):
+def parallel(tile_urls, factory, nprocs):
     """
     Fetch percentile data in parallel, using nprocs processes.
 
@@ -185,7 +191,7 @@ def parallel(tile_urls, factory_fn, nprocs):
 
     workers = []
     for i in range(0, nprocs):
-        w = Process(target=worker, args=(input_queue, output_queue, factory_fn))
+        w = Process(target=worker, args=(input_queue, output_queue, factory.create()))
         w.start()
         workers.append(w)
 
@@ -201,7 +207,7 @@ def parallel(tile_urls, factory_fn, nprocs):
 
     # after we've queued the Sentinels, each worker should output an aggregated
     # result on the output queue.
-    agg = factory_fn()
+    agg = factory.create()
     for i in range(0, nprocs):
         agg.merge_decode(output_queue.get())
 
@@ -242,7 +248,7 @@ def calculate_percentiles(tile_urls, percentiles, cache, nprocs):
         return Aggregator(cache)
 
     if nprocs > 1:
-        results = parallel(tile_urls, factory_fn, nprocs)
+        results = parallel(tile_urls, FactoryFunctionHolder(factory_fn), nprocs)
     else:
         results = sequential(tile_urls, factory_fn)
 
@@ -277,7 +283,7 @@ def calculate_outliers(tile_urls, num_outliers, cache, nprocs):
         return LargestN(num_outliers, cache)
 
     if nprocs > 1:
-        results = parallel(tile_urls, factory_fn, nprocs)
+        results = parallel(tile_urls, FactoryFunctionHolder(factory_fn), nprocs)
     else:
         results = sequential(tile_urls, factory_fn)
 
