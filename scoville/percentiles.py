@@ -31,7 +31,7 @@ def _fetch_cache(url):
     # we use the non-query part to store on disk. (tile won't depend on API
     # key, right?) partly because the API key can be very long and overflow
     # the max 255 chars for a filename when base64 encoded.
-    no_query = url[0].split('?', 1)[0].encode()
+    no_query = url.split('?', 1)[0].encode()
     encoded = urlsafe_b64encode(no_query).decode()
     assert len(encoded) < 256
 
@@ -107,8 +107,6 @@ class Aggregator(object):
         from msgpack import unpackb
         results = unpackb(data)
         for key1, by_zoom_map in results.items():
-            print(key1)
-            print(by_zoom_map)
             if key1 not in self.results:
                 self.results[key1] = defaultdict(list)
 
@@ -145,13 +143,13 @@ class LargestN(object):
             del largest[self.num:]
         self.results[name] = largest
 
-    def add(self, tile_url):
-        data = self.fetch_fn(tile_url)
+    def add(self, tile_blob):
+        data = self.fetch_fn(tile_blob[0])
         if not data:
             return
         tile = Tile(data)
         for layer in tile:
-            self._insert(layer.name, layer.size, layer.features_size, layer.properties_size, tile_url[0])
+            self._insert(layer.name, layer.size, layer.features_size, layer.properties_size, tile_blob[0])
 
     def encode(self):
         from msgpack import packb
@@ -236,7 +234,7 @@ def sequential(tiles, factory_fn):
     agg = factory_fn()
     for tile in tiles:
         agg.add(tile)
-    return (agg.results, agg.results_by_zoom)
+    return agg.results
 
 
 def calculate_percentiles(tiles, percentiles, cache, nprocs):
