@@ -31,7 +31,7 @@ def _fetch_cache(url):
     # we use the non-query part to store on disk. (tile won't depend on API
     # key, right?) partly because the API key can be very long and overflow
     # the max 255 chars for a filename when base64 encoded.
-    no_query = url.split('?', 1)[0].encode()
+    no_query = url[0].split('?', 1)[0].encode()
     encoded = urlsafe_b64encode(no_query).decode()
     assert len(encoded) < 256
 
@@ -78,15 +78,23 @@ class Aggregator(object):
         if cache:
             self.fetch_fn = _fetch_cache
 
-        self.results = defaultdict(list)
+        self.results = {'overall': defaultdict(list)}
 
-    def add(self, tile_url):
-        data = self.fetch_fn(tile_url)
-        self.results['~total'].append(len(data))
+    def add(self, tile_blob):
+        data = self.fetch_fn(tile_blob[0])
+        self.results['overall']['~total'].append(len(data))
 
         tile = Tile(data)
         for layer in tile:
-            self.results[layer.name].append(layer.size)
+            self.results['overall'][layer.name].append(layer.size)
+
+        zoom = str(tile_blob[1][0])
+        if not zoom in self.results:
+            self.results[zoom] = defaultdict(list)
+
+        self.results[zoom]['~total'].append(len(data))
+        for layer in tile:
+            self.results[zoom][layer.name].append(layer.size)
 
     # encode a message to be sent over the "wire" from a worker to the parent
     # process. we use msgpack encoding rather than pickle, as pickle was
@@ -98,8 +106,14 @@ class Aggregator(object):
     def merge_decode(self, data):
         from msgpack import unpackb
         results = unpackb(data)
-        for k, v in results.items():
-            self.results[k].extend(v)
+        for key1, by_zoom_map in results.items():
+            print(key1)
+            print(by_zoom_map)
+            if key1 not in self.results:
+                self.results[key1] = defaultdict(list)
+
+            for key2, value in by_zoom_map.items():
+                self.results[key1][key2].extend(value)
 
 
 class FactoryFunctionHolder(object):
@@ -137,7 +151,7 @@ class LargestN(object):
             return
         tile = Tile(data)
         for layer in tile:
-            self._insert(layer.name, layer.size, layer.features_size, layer.properties_size, tile_url)
+            self._insert(layer.name, layer.size, layer.features_size, layer.properties_size, tile_url[0])
 
     def encode(self):
         from msgpack import packb
@@ -168,14 +182,14 @@ def worker(input_queue, output_queue, aggregator):
         if isinstance(obj, Sentinel):
             break
 
-        assert(isinstance(obj, str))
+        #assert(isinstance(obj, str))
         aggregator.add(obj)
         input_queue.task_done()
 
     output_queue.put(aggregator.encode())
 
 
-def parallel(tile_urls, factory, nprocs):
+def parallel(tiles, factory, nprocs):
     """
     Fetch percentile data in parallel, using nprocs processes.
 
@@ -195,8 +209,8 @@ def parallel(tile_urls, factory, nprocs):
         w.start()
         workers.append(w)
 
-    for tile_url in tile_urls:
-        input_queue.put(tile_url)
+    for tile in tiles:
+        input_queue.put(tile)
 
     # join waits for all the tasks to be marked as done. this way we know that
     # enqueuing the Sentinel isn't going to "jump the queue" in front of a task
@@ -218,14 +232,14 @@ def parallel(tile_urls, factory, nprocs):
     return agg.results
 
 
-def sequential(tile_urls, factory_fn):
+def sequential(tiles, factory_fn):
     agg = factory_fn()
-    for tile_url in tile_urls:
-        agg.add(tile_url)
-    return agg.results
+    for tile in tiles:
+        agg.add(tile)
+    return (agg.results, agg.results_by_zoom)
 
 
-def calculate_percentiles(tile_urls, percentiles, cache, nprocs):
+def calculate_percentiles(tiles, percentiles, cache, nprocs):
     """
     Fetch tiles and calculate the percentile sizes in total and per-layer.
 
@@ -248,19 +262,21 @@ def calculate_percentiles(tile_urls, percentiles, cache, nprocs):
         return Aggregator(cache)
 
     if nprocs > 1:
-        results = parallel(tile_urls, FactoryFunctionHolder(factory_fn), nprocs)
+        results = parallel(tiles, FactoryFunctionHolder(factory_fn), nprocs)
     else:
-        results = sequential(tile_urls, factory_fn)
+        results = sequential(tiles, factory_fn)
 
     pct = {}
-    for label, values in results.items():
-        values.sort()
-        pcts = []
-        for p in percentiles:
-            i = min(len(values) - 1, int(len(values) * p / 100.0))
-            pcts.append(values[i])
+    for zoom, result in results.items():
+        pct[zoom] = {}
+        for label, values in result.items():
+            values.sort()
+            pcts = []
+            for p in percentiles:
+                i = min(len(values) - 1, int(len(values) * p / 100.0))
+                pcts.append(values[i])
 
-        pct[label] = pcts
+            pct[zoom][label] = pcts
 
     return pct
 

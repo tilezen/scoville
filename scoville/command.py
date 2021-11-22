@@ -194,7 +194,7 @@ def read_urls(file_name, url_pattern):
                 .replace('{x}', str(x)) \
                 .replace('{y}', str(y))
 
-            yield u
+            yield u, (str(z), str(x), str(y))
 
 
 def read_tiles(file_name):
@@ -272,13 +272,17 @@ def percentiles(tiles_file, url, percentiles, cache, nprocs, output_format):
         percentiles = [50, 90, 99, 99.9]
 
     tiles = read_urls(tiles_file, url)
-    result = calculate_percentiles(tiles, percentiles, cache, nprocs)
+    results = calculate_percentiles(tiles, percentiles, cache, nprocs)
 
     if output_format == 'text':
-        _percentiles_output_text(percentiles, result)
+        for k, result in results.items():
+            print("--%s--" % k)
+            _percentiles_output_text(percentiles, result)
 
     elif output_format == 'csv':
-        _percentiles_output_csv(percentiles, result)
+        for k, result in results.items():
+            print("--%s--" % k)
+            _percentiles_output_csv(percentiles, result)
 
     else:
         raise ValueError('Unknown output format %r' % (output_format,))
@@ -348,7 +352,7 @@ def outliers(tiles_file, url, cache, nprocs, num_outliers_per_layer):
     for name in sorted(result.keys()):
         click.secho("Layer %r" % name, fg='green', bold=True)
         for size, features_size, properties_size, url in sorted(result[name]):
-            click.echo("t:%8d f:%8d p:%8d %s" % (size, features_size, properties_size, url))
+            click.echo("total:%8d features:%8d properties:%8d %s" % (size, features_size, properties_size, url))
 
 
 def scoville_main():
