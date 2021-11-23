@@ -88,8 +88,8 @@ class Aggregator(object):
         for layer in tile:
             self.results['overall'][layer.name].append(layer.size)
 
-        zoom = str(tile_blob[1][0])
-        if not zoom in self.results:
+        zoom = f"{tile_blob[1][0]:0>2}"
+        if zoom not in self.results:
             self.results[zoom] = defaultdict(list)
 
         self.results[zoom]['~total'].append(len(data))

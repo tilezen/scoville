@@ -274,13 +274,12 @@ def percentiles(tiles_file, url, percentiles, cache, nprocs, output_format):
     tiles = read_urls(tiles_file, url)
     results = calculate_percentiles(tiles, percentiles, cache, nprocs)
 
-    if output_format == 'text':
-        for k, result in results.items():
+    for k, result in sorted(results.items(), reverse=True):
+        if output_format == 'text':
             print("--%s--" % k)
             _percentiles_output_text(percentiles, result)
 
-    elif output_format == 'csv':
-        for k, result in results.items():
+        elif output_format == 'csv':
             print("--%s--" % k)
             _percentiles_output_csv(percentiles, result)
 
