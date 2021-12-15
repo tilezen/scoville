@@ -1,5 +1,7 @@
-import click
 import json
+
+import click
+
 from scoville.mvt import Tile
 
 
@@ -106,7 +108,7 @@ def _info(mvt_file, kind, d3_json):
         if res.status_code == 200:
             tile = Tile(res.content)
         else:
-            click.echo("Failed to fetch tile, status was %r" %
+            click.echo('Failed to fetch tile, status was %r' %
                        (res.status_code,))
             return
 
@@ -156,16 +158,16 @@ def compare(tiles_file, url1, url2, kind):
     tile_urls1 = read_urls(tiles_file, url1)
     tile_urls2 = read_urls(tiles_file, url2)
     for tile, url1, url2 in zip(tiles, tile_urls1, tile_urls2):
-        print("===BEGIN===>%s" % tile)
+        print('===BEGIN===>%s' % tile)
 
-        print("url1: --->%s" % url1)
+        print('url1: --->%s' % url1)
         _info(url1, kind, None)
         print()
 
-        print("url2: --->%s" % url2)
+        print('url2: --->%s' % url2)
         _info(url1, kind, None)
 
-        print("<===END===%s\n\n" % tile)
+        print('<===END===%s\n\n' % tile)
 
 
 @cli.command()
@@ -346,9 +348,10 @@ def outliers(tiles_file, url, cache, nprocs, num_outliers_per_layer):
     result = calculate_outliers(tiles, num_outliers_per_layer, cache, nprocs)
 
     for name in sorted(result.keys()):
-        click.secho("Layer %r" % name, fg='green', bold=True)
+        click.secho('Layer %r' % name, fg='green', bold=True)
         for size, features_size, properties_size, url in sorted(result[name]):
-            click.echo("t:%8d f:%8d p:%8d %s" % (size, features_size, properties_size, url))
+            click.echo('t:%8d f:%8d p:%8d %s' %
+                       (size, features_size, properties_size, url))
 
 
 def scoville_main():

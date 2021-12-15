@@ -1,6 +1,6 @@
 click
+msgpack
+Pillow
 requests
 requests_futures
 squarify
-msgpack
-Pillow

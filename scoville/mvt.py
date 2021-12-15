@@ -1,5 +1,8 @@
-from scoville.pbf import Message, WireType
-from enum import Enum, IntEnum
+from enum import Enum
+from enum import IntEnum
+
+from scoville.pbf import Message
+from scoville.pbf import WireType
 
 
 class GeomType(Enum):
@@ -67,15 +70,15 @@ def _decode_value(data):
             value = field.as_int32() != 0
 
         else:
-            raise ValueError("Unexpected tag %d while decoding value"
+            raise ValueError('Unexpected tag %d while decoding value'
                              % (field.tag,))
 
     # the MVT spec says that there should be one and only one field in the
     # Value message, so check for that.
     if value is None:
-        raise ValueError("Found no fields when decoding value")
+        raise ValueError('Found no fields when decoding value')
     if count > 1:
-        raise ValueError("Found multiple fields when decoding value")
+        raise ValueError('Found multiple fields when decoding value')
 
     return value
 
@@ -134,7 +137,7 @@ class Feature(object):
                 self._geom_cmds_size += field.size
 
             else:
-                raise ValueError("Unknown Feature tag %d" % field.tag)
+                raise ValueError('Unknown Feature tag %d' % field.tag)
 
         self.unpacked = True
 
@@ -239,10 +242,10 @@ class Layer(object):
                 self.extent = field.as_uint32()
 
             else:
-                raise ValueError("Unknown Layer tag %d" % field.tag)
+                raise ValueError('Unknown Layer tag %d' % field.tag)
 
         if self.name is None:
-            raise ValueError("Layer missing name, but name is required")
+            raise ValueError('Layer missing name, but name is required')
 
     def __iter__(self):
         return iter(self.features)
@@ -261,7 +264,7 @@ class TileIterator(object):
 
         if field.tag != Tile.Tags.LAYER:
             raise ValueError(
-                "Expecting layer with tag %d, got tag %d instead."
+                'Expecting layer with tag %d, got tag %d instead.'
                 % (Tile.Tags.LAYER, field.tag))
 
         return Layer(field)
@@ -289,7 +292,7 @@ class Tile(object):
     class Tags(IntEnum):
         LAYER = 3
 
-    def __init__(self, data, name=""):
+    def __init__(self, data, name=''):
         self.data = data
         self.name = name
 

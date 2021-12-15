@@ -76,7 +76,7 @@ class _LengthDelimited(_Field):
 
     def as_packed(self, wire_type):
         if wire_type is WireType.length_delimited:
-            raise ValueError("Length delimited wire types cannot be packed.")
+            raise ValueError('Length delimited wire types cannot be packed.')
 
         return _LengthDelimited._iter(
             self.buf, self.tag, _WIRE_TYPES[wire_type])
@@ -144,8 +144,8 @@ class Decoder(object):
 
     def get_bytes(self, num_bytes):
         if self.pos + num_bytes > self.end:
-            raise EOFError("Unexpected end of PBF data, attempting to read "
-                           "%d bytes from position %d goes past end at %d"
+            raise EOFError('Unexpected end of PBF data, attempting to read '
+                           '%d bytes from position %d goes past end at %d'
                            % (num_bytes, self.pos, self.end))
         m = self.buf[self.pos:self.pos+num_bytes]
         self.pos += num_bytes
@@ -153,7 +153,7 @@ class Decoder(object):
 
     def get_byte(self):
         if self.pos == self.end:
-            raise EOFError("Unexpected end of PBF data at byte %d" % self.pos)
+            raise EOFError('Unexpected end of PBF data at byte %d' % self.pos)
 
         v = self.buf[self.pos]
         self.pos += 1

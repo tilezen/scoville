@@ -1,13 +1,14 @@
 import http.server
-import socketserver
-import pkg_resources
 import re
+import socketserver
+
+import pkg_resources
 import requests
 import squarify
+
 from scoville.mvt import Tile
 
-
-TILE_PATTERN = re.compile('^/tiles/([0-9]+)/([0-9]+)/([0-9]+)\.png$')
+TILE_PATTERN = re.compile('^/tiles/([0-9]+)/([0-9]+)/([0-9]+)/.png$')
 
 
 class Treemap(object):
@@ -28,7 +29,7 @@ class Treemap(object):
         sizes.sort(reverse=True)
 
         width = height = 256
-        im = Image.new("RGB", (width, height), "black")
+        im = Image.new('RGB', (width, height), 'black')
 
         values = squarify.normalize_sizes([r[0] for r in sizes], width, height)
         rects = squarify.squarify(values, 0, 0, width, height)
@@ -60,7 +61,7 @@ class Treemap(object):
             text_w, text_h = font.getsize(tile.name)
             center = (width / 2, height / 2)
             top_left_up_a_couple = (center[0] - text_w / 2,
-                        2 * text_h)
+                                    2 * text_h)
             draw.text(top_left_up_a_couple, tile.name, fill='black', font=font)
 
         del draw
@@ -96,14 +97,14 @@ class Heatmap(object):
         assert len(tiles) == ntiles ** 2
 
         width = height = 256
-        im = Image.new("RGB", (width, height), "black")
+        im = Image.new('RGB', (width, height), 'black')
 
         draw = ImageDraw.Draw(im)
 
         scale = width / ntiles
         assert width == scale * ntiles
 
-        parent_coord_name = ""
+        parent_coord_name = ''
         for x in range(0, ntiles):
             for y in range(0, ntiles):
                 tile = tiles[(x, y)]
@@ -114,7 +115,7 @@ class Heatmap(object):
                     parent_coord_name = tile.name
 
                 draw.rectangle(
-                    [x * scale, y * scale, (x+1) * scale, (y+1) * scale],
+                    [x * scale, y * scale, (x + 1) * scale, (y + 1) * scale],
                     fill=colour)
 
         if parent_coord_name:
@@ -132,10 +133,10 @@ class Heatmap(object):
 
 class Handler(http.server.BaseHTTPRequestHandler):
     def do_GET(self):
-        if self.path in ("/", "/index.html", "/style.css", "/map.js"):
+        if self.path in ('/', '/index.html', '/style.css', '/map.js'):
             template_name = self.path[1:]
             if not template_name:
-                template_name = "index.html"
+                template_name = 'index.html'
 
             self.send_template(template_name)
             return
@@ -145,8 +146,8 @@ class Handler(http.server.BaseHTTPRequestHandler):
             z, x, y = list(map(int, m.groups()))
 
             if 0 <= z < 16 and \
-               0 <= x < (1 << z) and \
-               0 <= y < (1 << z):
+                    0 <= x < (1 << z) and \
+                    0 <= y < (1 << z):
                 self.send_tile(z, x, y)
                 return
 
@@ -167,9 +168,9 @@ class Handler(http.server.BaseHTTPRequestHandler):
         for name, coord in tile_map.items():
             z, x, y = coord
             url = self.server.url_pattern \
-                             .replace("{z}", str(z)) \
-                             .replace("{x}", str(x)) \
-                             .replace("{y}", str(y))
+                .replace('{z}', str(z)) \
+                .replace('{x}', str(x)) \
+                .replace('{y}', str(y))
 
             futures[name] = session.get(url)
 
@@ -180,7 +181,9 @@ class Handler(http.server.BaseHTTPRequestHandler):
                 self.send_response(res.status_code)
                 return
 
-            tiles[name] = Tile(res.content, "%s/%s/%s" % (parent_coord[0], parent_coord[1], parent_coord[2]))
+            tiles[name] = Tile(res.content, '%s/%s/%s' %
+                               (parent_coord[0], parent_coord[1],
+                                parent_coord[2]))
 
         im = self.server.renderer.render(tiles)
 
@@ -194,7 +197,8 @@ class Handler(http.server.BaseHTTPRequestHandler):
     def send_template(self, template_name):
         from jinja2 import Template
 
-        resource = pkg_resources.resource_string(__name__, "proxy/" + template_name)
+        resource = pkg_resources.resource_string(
+            __name__, 'proxy/' + template_name)
         template = Template(resource.decode())
 
         data = template.render(port=self.server.server_port)
@@ -213,7 +217,7 @@ class ThreadedHTTPServer(socketserver.ThreadingMixIn, http.server.HTTPServer):
 
 
 def serve_http(url, port, renderer):
-    httpd = ThreadedHTTPServer(("", port), Handler, url, renderer)
-    print("Listening on port %d. Point your browser towards "
-          "http://localhost:%d/" % (port, port))
+    httpd = ThreadedHTTPServer(('', port), Handler, url, renderer)
+    print('Listening on port %d. Point your browser towards '
+          'http://localhost:%d/' % (port, port))
     httpd.serve_forever()
