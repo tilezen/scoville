@@ -1,5 +1,7 @@
-import requests
 from collections import defaultdict
+
+import requests
+
 from scoville.mvt import Tile
 
 
@@ -12,7 +14,7 @@ def _fetch_http(url):
 
     # TODO: retry? better error handling!
     if res.status_code != requests.codes.ok:
-        print("Got tile response %d for %s" % (res.status_code, url))
+        print('Got tile response %d for %s' % (res.status_code, url))
         return None
 
     return res.content
@@ -137,7 +139,8 @@ class LargestN(object):
             return
         tile = Tile(data)
         for layer in tile:
-            self._insert(layer.name, layer.size, layer.features_size, layer.properties_size, tile_url)
+            self._insert(layer.name, layer.size, layer.features_size,
+                         layer.properties_size, tile_url)
 
     def encode(self):
         from msgpack import packb
@@ -191,7 +194,8 @@ def parallel(tile_urls, factory, nprocs):
 
     workers = []
     for i in range(0, nprocs):
-        w = Process(target=worker, args=(input_queue, output_queue, factory.create()))
+        w = Process(target=worker, args=(
+            input_queue, output_queue, factory.create()))
         w.start()
         workers.append(w)
 
@@ -248,7 +252,8 @@ def calculate_percentiles(tile_urls, percentiles, cache, nprocs):
         return Aggregator(cache)
 
     if nprocs > 1:
-        results = parallel(tile_urls, FactoryFunctionHolder(factory_fn), nprocs)
+        results = parallel(
+            tile_urls, FactoryFunctionHolder(factory_fn), nprocs)
     else:
         results = sequential(tile_urls, factory_fn)
 
@@ -283,7 +288,8 @@ def calculate_outliers(tile_urls, num_outliers, cache, nprocs):
         return LargestN(num_outliers, cache)
 
     if nprocs > 1:
-        results = parallel(tile_urls, FactoryFunctionHolder(factory_fn), nprocs)
+        results = parallel(
+            tile_urls, FactoryFunctionHolder(factory_fn), nprocs)
     else:
         results = sequential(tile_urls, factory_fn)
 

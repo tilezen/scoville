@@ -1,11 +1,12 @@
-from setuptools import setup, find_packages
+from setuptools import find_packages
+from setuptools import setup
 
 version = '0.2.0'
 
 setup(
     name='scoville',
     version=version,
-    description="A tool for attributing MVT tile size.",
+    description='A tool for attributing MVT tile size.',
     long_description=open('README.md').read(),
     classifiers=[
         # strings from http://pypi.python.org/pypi?%3Aaction=list_classifiers

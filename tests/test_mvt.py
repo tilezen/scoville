@@ -22,7 +22,7 @@ class TestMVT(TestCase):
         layers = list(t)
         self.assertEqual(len(layers), 1)
         water_layer = layers[0]
-        self.assertEqual(water_layer.name, "water")
+        self.assertEqual(water_layer.name, 'water')
         features = list(water_layer)
         self.assertEqual(len(features), 1)
         feature = features[0]
