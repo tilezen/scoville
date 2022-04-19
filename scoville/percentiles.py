@@ -82,6 +82,12 @@ class Aggregator(object):
 
     def add(self, tile_blob):
         data = self.fetch_fn(tile_blob[0])
+        if data is None:
+            return
+        else:
+            import random 
+            if random.randint(0, 1000) == 1:
+                print(".", end='')
         self.results['overall']['~total'].append(len(data))
 
         tile = Tile(data)
@@ -95,6 +101,8 @@ class Aggregator(object):
         self.results[zoom]['~total'].append(len(data))
         for layer in tile:
             self.results[zoom][layer.name].append(layer.size)
+            # self.results[zoom][layer.name + "_features"].append(layer.features_size)
+            # self.results[zoom][layer.name + "_properties"].append(layer.properties_size)
 
     # encode a message to be sent over the "wire" from a worker to the parent
     # process. we use msgpack encoding rather than pickle, as pickle was
@@ -180,7 +188,6 @@ def worker(input_queue, output_queue, aggregator):
         if isinstance(obj, Sentinel):
             break
 
-        #assert(isinstance(obj, str))
         aggregator.add(obj)
         input_queue.task_done()
 

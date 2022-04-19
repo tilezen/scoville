@@ -283,8 +283,8 @@ def percentiles(tiles_file, url, percentiles, cache, nprocs, output_format):
             print("--%s--" % k)
             _percentiles_output_csv(percentiles, result)
 
-    else:
-        raise ValueError('Unknown output format %r' % (output_format,))
+        else:
+            raise ValueError('Unknown output format %r' % (output_format,))
 
 
 @cli.command()

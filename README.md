@@ -17,7 +17,7 @@ Running `scoville info --kind kind foo.mvt` on a [Nextzen](https://nextzen.org) 
 .water.features.bay.count => 2
 .water.features.bay.geom_cmds => 14
 .water.features.bay.metadata => 8
-.water.features.bay.names.count => 2
+.water.features.bay.names.count => 2 
 .water.features.bay.properties => 50
 .water.features.riverbank.count => 169
 .water.features.riverbank.geom_cmds => 61962
